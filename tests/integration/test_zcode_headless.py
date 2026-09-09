@@ -53,15 +53,22 @@ def zcode(*args: str, timeout: int = MODEL_RUN_TIMEOUT) -> subprocess.CompletedP
 
 
 def archive(name: str, argv: list[str], proc: subprocess.CompletedProcess | None, extra: str = "") -> None:
+    # GPT security hotfix: never persist the local username into repo evidence
+    import getpass
+    _u = getpass.getuser()
+
+    def _clean(s):
+        return s.replace("C:\\Users\\" + _u, "C:\\Users\\<user>") if isinstance(s, str) else s
+
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     body = [
-        f"$ {' '.join(argv)}",
+        f"$ {_clean(' '.join(map(str, argv)))}",
         f"exit={getattr(proc, 'returncode', 'N/A')}",
-        "--- stdout ---", (proc.stdout if proc else "N/A"),
-        "--- stderr ---", (proc.stderr if proc else "N/A"),
+        "--- stdout ---", _clean(proc.stdout if proc else "N/A"),
+        "--- stderr ---", _clean(proc.stderr if proc else "N/A"),
     ]
     if extra:
-        body += ["--- extra ---", extra]
+        body += ["--- extra ---", _clean(extra)]
     (EVIDENCE_DIR / f"{name}.txt").write_text("\n".join(body), encoding="utf-8")
 
 
