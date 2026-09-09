@@ -25,3 +25,6 @@ docs/p0-evidence/*.raw.txt
 Thumbs.db
 .DS_Store
 .zcode/
+
+# --- Local-only security evidence (never push) ---
+local/

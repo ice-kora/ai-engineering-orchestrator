@@ -26,7 +26,7 @@
 | Antigravity `agy` | ❌ 未装 | — | 桌面版已装无 CLI | **Blocker**（C 盘例外需豁免，提案 §3） |
 
 已知环境坑（已固化对策）：uv 镜像 403（命令级 `UV_DEFAULT_INDEX` 官方源覆盖）；git 全局无身份（各仓库本地 config）；`~/.m2` 在 C 盘（用户既有，不动）。
-安全：SECURITY-001（dbhub 明文 <DB_USER> 口令，实测有效）→ `docs/security-findings.md`，P0 不处理。
+安全：SECURITY-001（dbhub 明文高权限数据库口令，实测有效）→ `docs/security-findings.md`，P0 不处理。
 
 ## 2. P0 技术验证计划
 

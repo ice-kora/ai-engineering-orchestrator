@@ -71,7 +71,7 @@ Win11 23H2 (10.0.22631) · PowerShell 5.1+7.6.4 · Git 2.55.0.windows.3 · Pytho
 - 三组件未装 → P0 Exit 未达成（核心风险，等待安装授权）。
 - agy 强制 C 盘 → 需豁免决策，否则 P0-13 持续 BLOCKED。
 - Agent Mail 数据默认落 C 盘 → 已设计环境变量重定向方案，装时必须先设。
-- SECURITY-001：内网 MySQL root 明文口令（**实测有效**）存于 ZCode 全局配置 → 建议尽快轮换+改环境变量（`docs/security-findings.md`）。
+- SECURITY-001：内网 MySQL 高权限账号明文口令（**实测有效**）存于 ZCode 全局配置 → 建议尽快轮换+改环境变量（`docs/security-findings.md`）。
 - ZCode headless 若长期无法解锁：不影响 V1 架构（Pull 模式为主设计），仅推迟 Push 化探索。
 
 ## P1 Recommendation
