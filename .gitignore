@@ -1,0 +1,22 @@
+# --- Python ---
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# --- Secrets / env (never commit real credentials) ---
+.env
+*.pem
+*.key
+
+# --- Sandbox: demo-repo is an independent git repository managed by itself ---
+sandbox/demo-repo/
+
+# --- Logs / transient ---
+*.log
+docs/p0-evidence/*.raw.txt
+
+# --- OS ---
+Thumbs.db
+.DS_Store
