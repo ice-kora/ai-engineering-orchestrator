@@ -1,0 +1,33 @@
+== task: repo-neg ==
+-- claim --
+✓ Updated issue: repo-neg — claim-label-compensation probe
+-- label add --
+Error resolving stage:IMPLEMENTING: no issue found matching "stage:IMPLEMENTING"
+✓ Added label 'owner:agent-zcode' to repo-neg
+
+🏷 Labels for repo-neg:
+  - owner:agent-zcode
+
+-- 补偿回滚: status->open + label 清理 + backoff 标签 --
+✓ Updated issue: repo-neg — claim-label-compensation probe
+Error resolving stage:IMPLEMENTING: no issue found matching "stage:IMPLEMENTING"
+✓ Removed label 'owner:agent-zcode' from repo-neg
+Error resolving stage:READY: no issue found matching "stage:READY"
+✓ Added label 'backoff_until:20260909T1900' to repo-neg
+
+🏷 Labels for repo-neg:
+  - backoff_until:20260909T1900
+
+-- ready 视图（应含该任务）--
+○ repo-neg ● P1 claim-label-compensation probe
+○ repo-e0m ● P1 server-mode probe
+
+--------------------------------------------------------------------------------
+
+== 结论（可靠通道）==
+- `bd update <id> --add-label stage:XXX`（可重复）：可靠 ✓
+- `bd label add <id> <label>`（单 label）：可靠 ✓
+- `bd label add <id> label1 label2`（多位置参数）：当 label 含冒号+大写时被误解析为第二个 issue ID —— 禁用此形式
+- 全局旗标发现：`--actor`（审计链路，默认取 BEADS_ACTOR/git user.name/$USER）、`-C`（要求已有 .beads，init 不适用）、`--dolt-auto-commit off|on|batch`（多 Agent 写入策略关键旗标）
+- close 真实语法：`bd close <id> --reason "..."`（消息是 --reason 旗标，非位置参数）
+- 任务 ID 真实格式：`<repo-prefix>-<4位随机>`（prefix 可 `bd rename-prefix` 定制），非固定 bd-xxxx

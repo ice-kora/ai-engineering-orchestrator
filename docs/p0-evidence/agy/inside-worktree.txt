@@ -1,0 +1,7 @@
+$ -p git rev-parse cwd=D:\workspace\ai-engineering-orchestrator\sandbox\demo-repo\worktrees\agent-zcode
+exit=0
+--- stdout ---
+{"conversation_id":"b16b1580-13a9-4daf-90d5-4a6354af3bd8","status":"SUCCESS","response":"D:/workspace/ai-engineering-orchestrator\n","duration_seconds":16.6717658,"num_turns":1,"usage":{"input_tokens":34730,"output_tokens":1739,"thinking_tokens":1392,"cache_read_tokens":73194,"total_tokens":36469}}
+
+--- stderr ---
+N/A

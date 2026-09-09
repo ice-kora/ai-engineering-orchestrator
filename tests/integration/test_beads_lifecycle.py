@@ -28,21 +28,17 @@ pytestmark = pytest.mark.skipif(
 
 
 def bd(*args: str, cwd: Path = DEMO_REPO, check: bool = True) -> subprocess.CompletedProcess:
+    # NOTE (spec-vs-reality): bd -C exists but refuses dirs without an existing
+    # beads project ("no beads project found") — unusable for `init`. Process cwd
+    # works for every command including init, so we rely on cwd only.
     proc = subprocess.run(
-        [BD, "-C", str(cwd), *args] if _bd_supports_dash_c() else [BD, *args],
+        [BD, *args],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         cwd=str(cwd),
     )
     if check and proc.returncode != 0:
         raise AssertionError(f"bd {args} failed:\n{proc.stderr}")
     return proc
-
-
-def _bd_supports_dash_c() -> bool:
-    """First invocation decides whether bd accepts -C (spec-vs-reality probe)."""
-    help_text = subprocess.run([BD, "--help"], capture_output=True, text=True,
-                               encoding="utf-8", errors="replace").stdout
-    return " -C" in help_text or "--cwd" in help_text
 
 
 @pytest.fixture(scope="module")
@@ -62,10 +58,12 @@ def beads_repo(tmp_path_factory):
 
 
 def _task_id(output: str) -> str:
+    # Real format (v1.2.2): "<repo-prefix>-<4 rand>" e.g. "repo-qgz"; prefix is
+    # per-repo configurable (bd rename-prefix). Parse from the creation line.
     import re
-    m = re.search(r"bd-[0-9a-z]{4,10}", output)
+    m = re.search(r"Created issue: ([A-Za-z0-9][A-Za-z0-9-]*-[a-z0-9]+)", output)
     assert m, f"no task id in output: {output!r}"
-    return m.group(0)
+    return m.group(1)
 
 
 def test_create_dependency_ready(beads_repo):
@@ -123,4 +121,5 @@ def test_spec_vs_reality_compensation_commands(beads_repo):
 def test_close(beads_repo):
     task = _task_id(bd("create", "P0 close probe", "-p", "2", cwd=beads_repo).stdout)
     bd("update", task, "--claim", cwd=beads_repo)
-    bd("close", task, "done: P0 probe", cwd=beads_repo)
+    # real syntax: message goes via --reason, not positional (spec-vs-reality)
+    bd("close", task, "--reason", "done: P0 probe", cwd=beads_repo)

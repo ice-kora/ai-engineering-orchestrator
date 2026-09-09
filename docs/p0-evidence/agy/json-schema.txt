@@ -1,0 +1,7 @@
+$ -p 17+25 --json-schema ...
+exit=0
+--- stdout ---
+{"conversation_id":"11c84de6-7b93-4940-88cc-26c025ac3bf3","status":"SUCCESS","response":"{\"sum\":42,\"toolAction\":\"Complete calculation\",\"toolSummary\":\"Finish task\"}\n","duration_seconds":4.4169394,"num_turns":1,"structured_output":{"sum":42},"json_schema":{"type":"object","properties":{"sum":{"type":"integer"}},"required":["sum"],"additionalProperties":false},"usage":{"input_tokens":16424,"output_tokens":958,"thinking_tokens":929,"cache_read_tokens":0,"total_tokens":17382}}
+
+--- stderr ---
+N/A

@@ -1,0 +1,35 @@
+== bd version ==
+bd version 1.2.2 (6c124203e: HEAD@6c124203e771)
+== init (embedded, auto dolt) ==
+
+Run bd quickstart to get started.
+
+== dolt start ==
+Error: 'bd dolt start' is not supported in embedded mode (no Dolt server)
+== dolt status ==
+Dolt engine: embedded (in-process, no server)
+  Data: D:\workspace\ai-engineering-orchestrator\sandbox\bd-server-probe\repo\.beads\embeddeddolt
+== ping ==
+✓ bd ping: ok (25ms)
+== create+claim+label ==
+repo-e0m
+Error resolving : no issue found matching ""
+== statuses ==
+  📌 pinned         [frozen]  Persistent, stays open indefinitely
+  ◇ hooked         [wip   ]  Attached to an agent's hook
+
+No custom statuses configured.
+Configure with: bd config set status.custom "name:category,..."
+Categories: active, wip, done, frozen
+== where ==
+D:\workspace\ai-engineering-orchestrator\sandbox\bd-server-probe\repo\.beads
+  prefix: repo
+  database: D:\workspace\ai-engineering-orchestrator\sandbox\bd-server-probe\repo\.beads\embeddeddolt
+== 数据落盘位置 ==
+1.3M	.beads
+README.md
+config.yaml
+embeddeddolt
+hooks
+interactions.jsonl
+metadata.json

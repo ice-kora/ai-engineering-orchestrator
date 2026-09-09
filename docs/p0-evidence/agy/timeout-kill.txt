@@ -1,0 +1,8 @@
+$ -p long essay (killed at 8s)
+exit=N/A
+--- stdout ---
+N/A
+--- stderr ---
+N/A
+--- extra ---
+TimeoutExpired after 8.0s

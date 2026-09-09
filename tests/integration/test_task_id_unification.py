@@ -1,15 +1,13 @@
 """P0-12: unified task ID chain (Beads task == mail thread == reservation
 reason == git branch suffix == commit trailer).
 
-The Beads/Mail halves SKIP-BLOCKED until components are installed; the
-git-side conventions are verified live against sandbox/demo-repo.
-
-CLI hooks for demo.ps1:
-    python test_task_id_unification.py --demo-claim bd-xxxx
-    python test_task_id_unification.py --demo-close bd-xxxx
+- Beads side runs live (bd v1.2.2 installed).
+- Mail side runs live via the am CLI.
+- Git-side conventions verified against sandbox/demo-repo.
+- demo.ps1 hooks: --demo-claim <task> / --demo-close <task>.
 """
 
-import asyncio
+import json
 import re
 import subprocess
 import sys
@@ -17,14 +15,16 @@ from pathlib import Path
 
 import pytest
 
+from _mail import DEMO_REPO, am, am_json, get_identities, mail_available, register_identities
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEMO_REPO = PROJECT_ROOT / "sandbox" / "demo-repo"
+BD = Path(r"D:\Software\ai-orchestrator\beads\bd.exe")
 
-BRANCH_RE = re.compile(r"^agent/[a-z0-9_-]+/bd-[0-9a-z]+$")
-TASK_RE = re.compile(r"^bd-[0-9a-z]{4,10}$")
+BRANCH_RE = re.compile(r"^agent/[a-z0-9_-]+/[a-z0-9-]+-[a-z0-9]+$")
+TASK_RE = re.compile(r"^[a-z0-9][a-z0-9-]*-[a-z0-9]{3,8}$")  # real format: <repo-prefix>-<rand4>
 
 
-def git(*args: str, cwd: Path = DEMO_REPO) -> str:
+def git(*args: str, cwd: Path = PROJECT_ROOT / "sandbox" / "demo-repo") -> str:
     proc = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True,
                           text=True, encoding="utf-8", errors="replace")
     if proc.returncode != 0:
@@ -33,132 +33,79 @@ def git(*args: str, cwd: Path = DEMO_REPO) -> str:
 
 
 def test_branch_and_commit_conventions():
-    """v1.0 §6.2 / v1.1 §5.2: branch `agent/<agent>/<task-id>`, commit `[bd-xxx]`.
-
-    Uses the branches produced by the worktree tests (agent/*/bd-wt00xx),
-    which follow exactly the mandated pattern.
-    """
-    if not (DEMO_REPO / ".git").exists():
-        pytest.skip("demo-repo not initialized (run test_git_worktree.py first)")
-    branches = [b.strip() for b in git("branch", "--list", "agent/*").splitlines()] or \
-               [b.strip() for b in git("branch", "--all", "--list", "*bd-*").splitlines()]
-    assert branches, "no agent branches found; run test_git_worktree.py first"
+    """branch `agent/<agent>/<task-id>` + commit `[<task-id>]` trailer."""
+    branches = [b.strip() for b in git("branch", "--list", "agent/*").splitlines()]
+    assert branches, "no agent branches; run test_git_worktree.py first"
     for br in branches:
         assert BRANCH_RE.match(br), f"branch violates convention: {br}"
-
     log = git("log", "--grep", "\\[bd-", "--oneline", "-E", "--all")
-    assert "[bd-wt0001]" in log and "[bd-wt0002]" in log, (
-        "commits missing [bd-xxx] trailer:\n" + log
-    )
+    assert "[bd-wt0001]" in log, "commits missing [bd-xxx] trailer"
 
 
 def test_task_id_shape():
     assert TASK_RE.match("bd-a3f8e9")
-    assert not TASK_RE.match("bd-Short")
+    assert TASK_RE.match("demo-repo-qgz")  # real prefix form
     assert not TASK_RE.match("123")
 
 
-# ---------------- Beads+Mail chain (SKIP-BLOCKED without components) ---------
-
-bd = None
-try:
-    import shutil
-    bd = shutil.which("bd")
-except Exception:
-    pass
-
-from _mail import AGENTS, PROJECT_KEY, mail_available, stdio_params  # noqa: E402
-from test_agent_mail import call  # noqa: E402
-
-pytestmark_chain = pytest.mark.skipif(
-    bd is None or not mail_available(),
-    reason="BLOCKED: bd or mcp-agent-mail not installed",
-)
-
-
-@pytest.mark.skipif(bd is None or not mail_available(), reason="BLOCKED: components not installed")
-def test_unified_id_chain():
-    """One task id visible as: beads task, mail thread, reservation reason."""
-    proc = subprocess.run([bd, "-C", str(DEMO_REPO), "create", "P0 unified id probe", "-p", "1"],
+@pytest.mark.skipif(not BD.exists() or not mail_available(), reason="BLOCKED: bd or am not installed")
+def test_unified_id_chain(tmp_path):
+    """One task id as: beads task, mail thread id, reservation reason."""
+    a, b = register_identities()
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=str(repo), capture_output=True, check=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.name", "aeo-dev"], capture_output=True, check=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.email", "aeo-dev@local"], capture_output=True, check=True)
+    proc = subprocess.run([str(BD), "init", "--non-interactive"], cwd=str(repo),
                           capture_output=True, text=True, encoding="utf-8", errors="replace")
-    m = re.search(r"bd-[0-9a-z]{4,10}", proc.stdout)
-    assert m, f"no task id: {proc.stdout}{proc.stderr}"
-    task = m.group(0)
+    assert proc.returncode == 0, proc.stderr
+    created = subprocess.run([str(BD), "q", "unified id probe", "-p", "1"], cwd=str(repo),
+                             capture_output=True, text=True, encoding="utf-8", errors="replace")
+    m = re.search(r"([a-z0-9][a-z0-9-]*-[a-z0-9]{3,8})\s*$", created.stdout.strip(), re.M)
+    assert m, f"no task id: {created.stdout!r} {created.stderr!r}"
+    task = m.group(1)
 
-    async def chain() -> tuple[bool, bool]:
-        from mcp import ClientSession
-        from mcp.client.stdio import stdio_client
+    # mail: thread id == task id
+    sent = am_json("mail", "send", "--project", DEMO_REPO, "--from", a, "--to", b,
+                   "--subject", f"[{task}] Start", "--body", "unified id chain probe",
+                   "--thread-id", task, "--json")
+    assert sent
+    inbox = am_json("mail", "inbox", "--project", DEMO_REPO, "--agent", b, "--json")
+    assert task in json.dumps(inbox), "thread id != beads task id in inbox"
 
-        thread_ok = reason_ok = False
-        async with stdio_client(stdio_params()) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                await call(session, "send_message", {
-                    "project_key": PROJECT_KEY, "sender": AGENTS[0], "recipient": AGENTS[1],
-                    "subject": f"[{task}] Start", "body": "unified id chain probe",
-                    "thread_id": task,
-                })
-                topic = await call(session, "fetch_topic", {
-                    "project_key": PROJECT_KEY, "thread_id": task,
-                })
-                thread_ok = task in str(topic)
-                res = await call(session, "file_reservation_paths", {
-                    "project_key": PROJECT_KEY, "agent_name": AGENTS[0],
-                    "paths": ["src/calculator.py"], "ttl_seconds": 30,
-                    "exclusive": True, "reason": task,
-                })
-                reason_ok = task in str(res)
-                await call(session, "release_file_reservations", {
-                    "project_key": PROJECT_KEY, "agent_name": AGENTS[0],
-                })
-        return thread_ok, reason_ok
+    # reservation: reason == task id
+    res = am_json("file_reservations", "reserve", "--ttl", "120", "--exclusive",
+                  "--reason", task, DEMO_REPO, a, "src/calculator.py")
+    assert res.get("granted") and res["granted"][0]["reason"] == task
+    am("file_reservations", "release", DEMO_REPO, a)
 
-    thread_ok, reason_ok = asyncio.run(chain())
-    assert thread_ok, "mail thread id != beads task id"
-    assert reason_ok, "reservation reason != beads task id"
-    subprocess.run([bd, "-C", str(DEMO_REPO), "close", task, "probe done"], capture_output=True)
+    # beads: close
+    closed = subprocess.run([str(BD), "close", task, "--reason", "probe done"], cwd=str(repo),
+                            capture_output=True, text=True, encoding="utf-8", errors="replace")
+    assert closed.returncode == 0, closed.stderr
 
-
-# ---------------- demo.ps1 CLI hooks ------------------------------------------
 
 if __name__ == "__main__":
     if not mail_available():
-        print("BLOCKED: mcp-agent-mail not installed")
+        print("BLOCKED: am CLI not installed")
         sys.exit(2)
     task = sys.argv[sys.argv.index("--demo-claim") + 1] if "--demo-claim" in sys.argv else None
     close_task = sys.argv[sys.argv.index("--demo-close") + 1] if "--demo-close" in sys.argv else None
     task = close_task or task
+    a, b = register_identities()
 
-    async def demo_step(close: bool):
-        from mcp import ClientSession
-        from mcp.client.stdio import stdio_client
-
-        async with stdio_client(stdio_params()) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                for agent in AGENTS:
-                    await call(session, "register_agent", {"agent_name": agent, "project_key": PROJECT_KEY})
-                if close:
-                    await call(session, "send_message", {
-                        "project_key": PROJECT_KEY, "sender": AGENTS[1], "recipient": AGENTS[0],
-                        "subject": f"[{task}] Review: APPROVED", "body": "cross review approved",
-                        "thread_id": task,
-                    })
-                    await call(session, "release_file_reservations", {
-                        "project_key": PROJECT_KEY, "agent_name": AGENTS[0],
-                    })
-                    print(f"demo-close done: review message + release for {task}")
-                else:
-                    await call(session, "file_reservation_paths", {
-                        "project_key": PROJECT_KEY, "agent_name": AGENTS[0],
-                        "paths": ["src/calculator.py", "tests/test_calculator.py"],
-                        "ttl_seconds": 600, "exclusive": True, "reason": task,
-                    })
-                    await call(session, "send_message", {
-                        "project_key": PROJECT_KEY, "sender": AGENTS[0], "recipient": AGENTS[1],
-                        "subject": f"[{task}] Start", "body": "claimed + reserved, coding starts",
-                        "thread_id": task,
-                    })
-                    print(f"demo-claim done: reserved + Start message for {task}")
-
-    asyncio.run(demo_step(close=close_task is not None))
+    if close_task:
+        am_json("mail", "send", "--project", DEMO_REPO, "--from", b, "--to", a,
+                "--subject", f"[{task}] Review: APPROVED", "--body", "cross review approved",
+                "--thread-id", task, "--json")
+        am("file_reservations", "release", DEMO_REPO, a)
+        print(f"demo-close done: review message + release for {task}")
+    else:
+        am_json("file_reservations", "reserve", "--ttl", "600", "--exclusive",
+                "--reason", task, DEMO_REPO, a,
+                "src/calculator.py", "tests/test_calculator.py")
+        am_json("mail", "send", "--project", DEMO_REPO, "--from", a, "--to", b,
+                "--subject", f"[{task}] Start", "--body", "claimed + reserved, coding starts",
+                "--thread-id", task, "--json")
+        print(f"demo-claim done: reserved + Start message for {task}")

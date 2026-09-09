@@ -1,0 +1,45 @@
+=== AEO P0 demo (round 2) ===
+
+[1/7] Beads: init + create + dep
+impl=demo-repo-ujn review=demo-repo-xb4 (review blocked-by impl)
+
+[2/7] Beads: ready -> atomic claim
+鈼?demo-repo-ujn 鈼?P1 P0 demo: implement calculator add(a,b) + tests
+
+--------------------------------------------------------------------------------
+Ready: 1 issues with no active blockers
+
+Status: 鈼?open  鈼?in_progress  鈼?blocked  鉁?closed  鉂?deferred
+鉁?Updated issue: demo-repo-ujn 鈥?P0 demo: implement calculator add(a,b) + tests
+
+[3/7] AgentMail: identities + reserve(reason=demo-repo-ujn) + Start(thread=demo-repo-ujn)
+demo-claim done: reserved + Start message for demo-repo-ujn
+
+[4/7] Git: worktree branch agent/zcode/demo-repo-ujn
+Preparing worktree (new branch 'agent/zcode/home')
+HEAD is now at 65bda10 bd init: initialize beads issue tracking
+Switched to a new branch 'agent/zcode/demo-repo-ujn'
+
+[5/7] Code: calculator + unittest (in worktree)
+test_add (tests.test_calculator.T.test_add) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+warning: in the working copy of 'src/calculator.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_calculator.py', LF will be replaced by CRLF the next time Git touches it
+[agent/zcode/demo-repo-ujn a2363ec] [demo-repo-ujn] implement calculator add + tests
+ 2 files changed, 5 insertions(+), 17 deletions(-)
+
+[6/7][7/7] Review msg -> release -> merge -> close
+demo-close done: review message + release for demo-repo-ujn
+Merge made by the 'ort' strategy.
+ src/calculator.py        |  8 +++-----
+ tests/test_calculator.py | 14 ++------------
+ 2 files changed, 5 insertions(+), 17 deletions(-)
+鉁?Closed demo-repo-ujn 鈥?P0 demo: implement calculator add(a,b) + tests: demo complete: tests pass, review ack, merged
+鉁?Closed demo-repo-xb4 鈥?P0 demo: cross-review: review task closed after impl merge
+
+=== demo 完成：统一 ID [demo-repo-ujn] 贯穿 Beads/Mail/Reservation/Branch/Commit ===
+证据复核：git -C D:\workspace\ai-engineering-orchestrator\sandbox\demo-repo log --oneline -5 ; bd ready ; am file_reservations active D:/workspace/ai-engineering-orchestrator/sandbox/demo-repo

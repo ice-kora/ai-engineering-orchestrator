@@ -28,3 +28,5 @@ Thumbs.db
 
 # --- Local-only security evidence (never push) ---
 local/
+sandbox/bd-server-probe/
+sandbox/agy-scratch/

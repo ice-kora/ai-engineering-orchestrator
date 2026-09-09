@@ -1,0 +1,7 @@
+$ -p - stdin=Reply...
+exit=0
+--- stdout ---
+{"conversation_id":"6594eb0d-12b8-4481-9a90-7977179cfafe","status":"SUCCESS","response":"副驾已就绪。请告诉我当前需要推进的架构设计、代码实现或排查任务。\n","duration_seconds":1.9467917,"num_turns":1,"usage":{"input_tokens":8057,"output_tokens":163,"thinking_tokens":141,"cache_read_tokens":8139,"total_tokens":8220}}
+
+--- stderr ---
+N/A

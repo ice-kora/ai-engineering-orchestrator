@@ -1,0 +1,8 @@
+$ <analysis>
+exit=N/A
+--- stdout ---
+N/A
+--- stderr ---
+N/A
+--- extra ---
+ndjson_events=4 has_result=True
