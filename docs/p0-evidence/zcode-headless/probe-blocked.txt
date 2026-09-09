@@ -1,0 +1,9 @@
+$ node D:\Software\zcode\install\ZCode\resources\glm\zcode.cjs --prompt Reply with exactly: OK --json --cwd D:\workspace\ai-engineering-orchestrator\sandbox\zcode-headless-scratch\wt-a
+exit=1
+--- stdout ---
+
+--- stderr ---
+Error: Model config is missing. Create C:\Users\<user>\.zcode\cli\config.json with an explicit model provider before running ZCode.
+
+--- extra ---
+BLOCKED: model provider wiring missing; see module docstring

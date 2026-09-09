@@ -140,24 +140,30 @@ def test_per_agent_worktree_independence():
     assert git("branch", "--show-current", cwd=ZCODE_WT) == "agent/zcode/bd-wt0001"
     assert git("branch", "--show-current", cwd=AG_WT) == "agent/antigravity/bd-wt0002"
 
-    # 3. Independent edits: main checkout stays untouched meanwhile
+    # 3. Independent edits with a run-unique marker: siblings/main must never see it
+    import uuid
+    marker_name = f"run-{uuid.uuid4().hex[:8]}.marker"
     write(ZCODE_WT / "src" / "calculator.py", CALCULATOR)
     write(ZCODE_WT / "tests" / "test_calculator.py", TEST_CALCULATOR)
+    write(ZCODE_WT / marker_name, "in-flight zcode edit\n")
     # unittest discovery requires packages under the top-level dir
     write(ZCODE_WT / "src" / "__init__.py", "")
     write(ZCODE_WT / "tests" / "__init__.py", "")
     write(AG_WT / "src" / "service" / "TestService.java", TEST_SERVICE)
-    assert not (DEMO_REPO / "src" / "calculator.py").exists()  # isolation
-    assert not (AG_WT / "src" / "calculator.py").exists()
+    ag_marker = f"ag-{marker_name}"
+    write(AG_WT / ag_marker, "in-flight antigravity edit\n")
+    # isolation: uncommitted marker is invisible to main checkout and sibling worktree
+    assert not (DEMO_REPO / marker_name).exists()
+    assert not (AG_WT / marker_name).exists()
 
     git("add", "-A", cwd=ZCODE_WT)
     git("commit", "-m", "[bd-wt0001] implement calculator add + tests", cwd=ZCODE_WT)
     git("add", "-A", cwd=AG_WT)
-    git("commit", "-m", "[bd-wt0002] add TestService placeholder", cwd=AG_WT)
+    git("commit", "-m", f"[bd-wt0002] add TestService placeholder ({ag_marker})", cwd=AG_WT)
 
-    # 4. Diffable
-    diff = git("diff", "main", "agent/zcode/bd-wt0001", "--", "src/calculator.py")
-    assert "+def add(" in diff
+    # 4. Diffable: the run-unique marker (and calculator on first-ever run) differ from main
+    diff = git("diff", "main", "agent/zcode/bd-wt0001", "--", marker_name)
+    assert "+in-flight zcode edit" in diff
 
     # 5. Unittest runs inside the worktree, isolated from the other worktree
     proc = subprocess.run(
@@ -174,6 +180,8 @@ def test_per_agent_worktree_independence():
     merged_calc = (DEMO_REPO / "src" / "calculator.py").read_text(encoding="utf-8")
     assert "def add(" in merged_calc
     assert (DEMO_REPO / "src" / "service" / "TestService.java").exists()
+    # both runs' markers landed in main only via their own merges
+    assert (DEMO_REPO / marker_name).exists() and (DEMO_REPO / ag_marker).exists()
 
     # normal success path cleanup is allowed; home branches stay for reuse
     git("worktree", "remove", str(ZCODE_WT))

@@ -12,6 +12,10 @@ __pycache__/
 
 # --- Sandbox: demo-repo is an independent git repository managed by itself ---
 sandbox/demo-repo/
+# --- Sandbox: headless probe scratch & agent-mail test data (regenerable) ---
+sandbox/zcode-headless-scratch/
+sandbox/agent-mail-test-data/
+probe*-stderr.txt
 
 # --- Logs / transient ---
 *.log
@@ -20,3 +24,4 @@ docs/p0-evidence/*.raw.txt
 # --- OS ---
 Thumbs.db
 .DS_Store
+.zcode/

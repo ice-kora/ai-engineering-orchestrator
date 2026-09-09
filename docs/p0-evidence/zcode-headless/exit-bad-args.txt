@@ -1,0 +1,69 @@
+$ node D:\Software\zcode\install\ZCode\resources\glm\zcode.cjs --definitely-not-a-real-flag
+exit=1
+--- stdout ---
+
+--- stderr ---
+Unknown option '--definitely-not-a-real-flag'. To specify a positional argument starting with a '-', place it at the end of the command after '--', as in '-- "--definitely-not-a-real-flag"
+
+zcode 0.16.5
+
+Usage:
+  zcode [command] [options]
+
+With no command, zcode opens the full-screen TUI.
+
+Commands:
+  app-server Run the ZCode Protocol stdio app server
+  commands   List custom slash commands (`commands list`)
+  doctor     Inspect runtime and packaging assumptions
+  login      Sign in with Z.AI OAuth for model access
+  logout     Remove the shared Z.AI login credentials
+  plugins    List and enable installed plugins (`plugins list`)
+  skills     List local skills (`skills list`)
+  tui        Open the terminal UI
+  version    Print the CLI version
+
+Options:
+  -h, --help       Show help
+  -v, --version    Show version
+  --prompt <text>  Run a single prompt without opening the TUI
+  --browser-use <mode> Enable Browser Use backend (supported: headless)
+  --surface <surface>  Presentation surface for headless prompts/app-server: terminal or desktop
+  --browser-executable <path> Chrome/Chromium executable for headless Browser Use
+  -p, --print      Run a positional prompt without opening the TUI
+  --attach <path>  Attach a local file to --prompt; repeat for multiple files
+  --cwd <path>     Run this command from the given directory
+  --disallowedTools, --disallowed-tools <tools...>  Comma or space-separated list of tool names to deny (e.g. "Bash(git *) Edit")
+  --force-mcs      Force mid-conversation system projection for Anthropic providers
+  --locale <locale>  UI locale: en-US, zh-CN, or auto
+  --mode <mode>    Permission mode for prompts: build, edit, plan, or yolo (default: yolo for --prompt)
+  --settings <path>  Load user config from a specific settings file
+  --permission-mode <mode>  Legacy permission mode alias: default, build, edit, plan, or yolo
+  --max-turns <n>  Maximum model turns for headless prompts
+  --allowed-tools <list>  Comma/space-separated tool allowlist for headless prompts
+  --disallowed-tools <list>  Comma/space-separated tool denylist for headless prompts
+  --allow-main-worktree-yolo  Accepted for legacy headless launcher compatibility
+  --resume <sessionId>  Resume a persisted session by sessionId (sess_...)
+  --target <text>  Run or set the session goal in headless mode
+  --target-replace Replace any existing session goal set by --target
+  -c, --continue        Resume the latest session for the current directory
+  --json           Print machine-readable JSON where supported
+  --no-browser     Print the OAuth URL without opening a browser
+  --no-color       Disable ANSI colors
+  --verbose        Print extra diagnostic detail
+
+Slash Commands:
+  /help [command]       Show slash command help
+  /login                Sign in with Z.AI OAuth
+  /logout               Remove the shared Z.AI login credentials
+  /compact [instructions]  Compact the current conversation
+  /expert [status|resume|stop|<task>]  Run or manage the expert workflow
+  /fork [latest|checkpointId]  Fork a new session from a workspace checkpoint
+  /mcp [list|status|connect|disconnect]  Show or manage MCP servers
+  /mode [mode]          Show or switch permission mode: build, edit, plan, or yolo
+  /model [id]           Show or switch the current session model
+  /new                  Start a fresh session in the TUI
+  /resume [sessionId]   Resume a session by sessionId; omit it for latest in cwd
+  /rewind [latest|checkpointId]  Show latest checkpoint or restore workspace files
+  /skill [name] [task]  List skills, or force the next prompt to load one
+  /goal [action]        Show or set the current session goal

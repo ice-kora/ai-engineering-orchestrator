@@ -1,0 +1,9 @@
+$ node D:\Software\zcode\install\ZCode\resources\glm\zcode.cjs -p Reply with exactly: OK
+exit=1
+--- stdout ---
+
+--- stderr ---
+Error: Model config is missing. Create C:\Users\<user>\.zcode\cli\config.json with an explicit model provider before running ZCode.
+
+--- extra ---
+accepted=True

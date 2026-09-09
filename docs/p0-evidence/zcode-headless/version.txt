@@ -1,0 +1,6 @@
+$ node D:\Software\zcode\install\ZCode\resources\glm\zcode.cjs --version
+exit=0
+--- stdout ---
+0.16.5
+
+--- stderr ---

@@ -1,0 +1,16 @@
+$ <matrix>
+exit=N/A
+--- stdout ---
+N/A
+--- stderr ---
+N/A
+--- extra ---
+--prompt <text>: ACCEPTED
+-p (positional): ACCEPTED
+--json: ACCEPTED
+--cwd <path>: ACCEPTED
+--mode yolo: ACCEPTED
+--max-turns <n>: REJECTED
+--allowed-tools <list>: REJECTED
+--disallowed-tools <list>: ACCEPTED
+--settings <path>: REJECTED

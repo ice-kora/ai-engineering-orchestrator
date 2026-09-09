@@ -1,0 +1,54 @@
+#!/bin/sh
+# ============================================================================
+# pre-commit.agent-guard — Agent Mail 文件预约 Git Guard（模板，Pre-P0 Gate #5）
+#
+# 用途：commit 前检查本次提交触碰的文件是否处于其他 Agent 的 exclusive 预约中，
+#       命中则拒绝提交（advisory lease 的提交期防线，v1.1 §7.2/AGENTS.md §6）。
+# 安装（target repo 内，暂未自动化）：
+#   POSIX shell:  cp <本文件> .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+#   Windows shim: .git/hooks/pre-commit.cmd 内容:
+#     @echo off
+#     sh "%~dp0pre-commit" %*
+#   （Git for Windows 自带 sh，可直接执行本脚本；core.hooksPath 需指向该目录）
+# 环境变量：
+#   AGENT_NAME          当前提交者所属 Agent（如 agent-zcode）；未设置则放行并警告
+#   AGENT_MAIL_BYPASS=1 旁路（应急，等价 --no-verify，审计上应记录）
+#   AGENT_MAIL_GUARD_MODE=warn  只警告不拦截
+# 实现说明：P0 阶段 Agent Mail 未安装，check 命令以占位符给出；
+#   安装后替换为实际的冲突查询入口（MCP tool check_file_reservation_conflicts
+#   或 am CLI 等价命令），并在 tests/integration 中以真实组件回归。
+# ============================================================================
+set -eu
+
+if [ "${AGENT_MAIL_BYPASS:-0}" = "1" ]; then
+  echo "[agent-guard] BYPASSED via AGENT_MAIL_BYPASS=1 (audit this!)"
+  exit 0
+fi
+
+AGENT="${AGENT_NAME:-}"
+if [ -z "$AGENT" ]; then
+  echo "[agent-guard] WARN: AGENT_NAME unset; cannot attribute commit to an agent."
+  echo "[agent-guard] WARN: allowing commit (set AGENT_NAME to enable guard)."
+  exit 0
+fi
+
+# 本次提交触碰的文件（对 staged 内容）
+CHANGED=$(git diff --cached --name-only; git diff --cached --name-only --diff-filter=U)
+[ -z "$CHANGED" ] && exit 0
+
+# TODO(P1, blocked-by agent-mail install): replace with real conflict query, e.g.
+#   CONFLICTS=$(am reservations conflicts --project <key> --agent "$AGENT" --paths $CHANGED)
+CONFLICTS=""
+
+if [ -n "$CONFLICTS" ]; then
+  if [ "${AGENT_MAIL_GUARD_MODE:-block}" = "warn" ]; then
+    echo "[agent-guard] WARN: files reserved by another agent:"; echo "$CONFLICTS"
+    exit 0
+  fi
+  echo "[agent-guard] BLOCK: commit touches files exclusively reserved by another agent:" 1>&2
+  echo "$CONFLICTS" 1>&2
+  echo "[agent-guard] release/renew the reservation or coordinate via Agent Mail thread." 1>&2
+  exit 1
+fi
+
+exit 0
