@@ -1,7 +1,7 @@
-$ -p create marker cwd=D:\workspace\ai-engineering-orchestrator\sandbox\demo-repo\worktrees\agent-zcode
+$ -p create marker attempt=1 cwd=D:\workspace\ai-engineering-orchestrator\sandbox\demo-repo\worktrees\agent-zcode
 exit=0
 --- stdout ---
-{"conversation_id":"483b51ab-2292-4732-89da-cb986ae88102","status":"SUCCESS","response":"DONE\n","duration_seconds":18.5592183,"num_turns":1,"usage":{"input_tokens":53150,"output_tokens":2846,"thinking_tokens":2475,"cache_read_tokens":52842,"total_tokens":55996}}
+{"conversation_id":"36ee21ee-bc21-45dd-a598-c6bfee325fe6","status":"SUCCESS","response":"An execution task has been launched to set the exact content of [agy-wt-marker.txt](file:///D:/workspace/ai-engineering-orchestrator/sandbox/demo-repo/worktrees/agent-zcode/agy-wt-marker.txt). Waiting for it to complete.\nDONE\n\nCreated [agy-wt-marker.txt](file:///D:/workspace/ai-engineering-orchestrator/sandbox/demo-repo/worktrees/agent-zcode/agy-wt-marker.txt).\n","duration_seconds":26.8120027,"num_turns":1,"usage":{"input_tokens":48844,"output_tokens":2615,"thinking_tokens":2143,"cache_read_tokens":77225,"total_tokens":51459}}
 
 --- stderr ---
 N/A

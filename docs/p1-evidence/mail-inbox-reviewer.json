@@ -1,0 +1,192 @@
+[
+  {
+    "id": 23,
+    "subject": "[demo-repo-4j2] Handover for review (iteration 2)",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-10T02:24:31.855194Z",
+    "kind": "to",
+    "thread_id": "demo-repo-4j2"
+  },
+  {
+    "id": 21,
+    "subject": "[demo-repo-4j2] Handover for review (iteration 1)",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-10T02:23:32.172636Z",
+    "kind": "to",
+    "thread_id": "demo-repo-4j2"
+  },
+  {
+    "id": 20,
+    "subject": "[demo-repo-4j2] Start: P1 loop: ShoppingCart with volume discount + tests",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-10T02:23:30.518022Z",
+    "kind": "to",
+    "thread_id": "demo-repo-4j2"
+  },
+  {
+    "id": 19,
+    "subject": "[demo-repo-v91] Handover for review (iteration 1)",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-10T02:22:18.032121Z",
+    "kind": "to",
+    "thread_id": "demo-repo-v91"
+  },
+  {
+    "id": 18,
+    "subject": "[demo-repo-v91] Start: P1 loop: ShoppingCart with volume discount + tests",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-10T02:22:16.391371Z",
+    "kind": "to",
+    "thread_id": "demo-repo-v91"
+  },
+  {
+    "id": 17,
+    "subject": "[repo-xp5] Start",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-10T01:47:40.530442Z",
+    "kind": "to",
+    "thread_id": "repo-xp5"
+  },
+  {
+    "id": 16,
+    "subject": "[bd-p0cap] Start: capability probe",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-10T01:42:07.926109Z",
+    "kind": "to",
+    "thread_id": "bd-p0cap"
+  },
+  {
+    "id": 15,
+    "subject": "[repo-wi9] Start",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-10T01:36:03.728490Z",
+    "kind": "to",
+    "thread_id": "repo-wi9"
+  },
+  {
+    "id": 14,
+    "subject": "[bd-p0cap] Start: capability probe",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-10T01:31:18.487241Z",
+    "kind": "to",
+    "thread_id": "bd-p0cap"
+  },
+  {
+    "id": 12,
+    "subject": "[demo-repo-ujn] Start",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-09T11:11:48.544293Z",
+    "kind": "to",
+    "thread_id": "demo-repo-ujn"
+  },
+  {
+    "id": 11,
+    "subject": "[repo-zwi] Start",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-09T11:10:46.641213Z",
+    "kind": "to",
+    "thread_id": "repo-zwi"
+  },
+  {
+    "id": 10,
+    "subject": "[bd-p0cap] Start: capability probe",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-09T11:06:31.942078Z",
+    "kind": "to",
+    "thread_id": "bd-p0cap"
+  },
+  {
+    "id": 9,
+    "subject": "[repo-7ih] Start",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-09T10:57:27.771191Z",
+    "kind": "to",
+    "thread_id": "repo-7ih"
+  },
+  {
+    "id": 8,
+    "subject": "[repo-twp] Start",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-09T10:57:10.949737Z",
+    "kind": "to",
+    "thread_id": "repo-twp"
+  },
+  {
+    "id": 7,
+    "subject": "[repo-7op] Start",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-09T10:56:59.163309Z",
+    "kind": "to",
+    "thread_id": "repo-7op"
+  },
+  {
+    "id": 6,
+    "subject": "[repo-aps] Start",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-09T10:56:38.734201Z",
+    "kind": "to",
+    "thread_id": "repo-aps"
+  },
+  {
+    "id": 5,
+    "subject": "[bd-p0cap] Start: capability probe",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-09T10:55:31.110825Z",
+    "kind": "to",
+    "thread_id": "bd-p0cap"
+  },
+  {
+    "id": 4,
+    "subject": "[bd-p0cap] Start: capability probe",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-09T10:54:50.656223Z",
+    "kind": "to",
+    "thread_id": "bd-p0cap"
+  },
+  {
+    "id": 3,
+    "subject": "Contact approved: SageBridge -> FrostyCave",
+    "from": "SageBridge",
+    "importance": "normal",
+    "ack_required": false,
+    "created_ts": "2026-09-09T10:54:50.291556Z",
+    "kind": "to",
+    "thread_id": null
+  }
+]
