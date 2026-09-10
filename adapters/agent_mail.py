@@ -114,6 +114,73 @@ class AgentMailAdapter:
         m = "Released"
         return 1 if m in proc.stdout else 0
 
+    # ---- task-scoped release (P2-00 hardening) ----
+    # CLI facts (verified 2026-09-10): `file_reservations list <PROJECT>` prints a
+    # table with ID/PATTERN/AGENT/EXPIRES/REASON; `release <PROJECT> <AGENT>
+    # --ids <ID>` releases exactly that reservation. Both are used to map
+    # task_id -> reservation ids via the REASON column (unified-id convention).
+
+    def active_reservations(self) -> list[dict]:
+        """Parse `am file_reservations list` into dicts (id/pattern/agent/reason)."""
+        proc = self._am("file_reservations", "list", self.project_key)
+        rows: list[dict] = []
+        for line in (proc.stdout or "").splitlines():
+            parts = line.split()
+            # expected columns: ID PATTERN AGENT EXPIRES REASON...
+            if len(parts) >= 5 and parts[0].isdigit():
+                rows.append({
+                    "id": parts[0], "pattern": parts[1], "agent": parts[2],
+                    "reason": parts[4],
+                })
+        return rows
+
+    def release_for_task(self, agent_role: str, task_id: str,
+                         paths: list[str] | None = None,
+                         reservation_ids: list[str] | None = None) -> dict:
+        """Release ONLY the reservations belonging to `task_id` for this agent.
+
+        Resolution order: explicit reservation_ids (from our own reserve() call)
+        -> REASON==task_id rows from `list` -> `--paths` fallback. Post-verifies
+        that other reservations of the same agent survived. Never touches other
+        agents. Returns an evidence dict.
+        """
+        agent = self.agent(agent_role)
+        ids: list[str] = list(reservation_ids or [])
+        if not ids:
+            ids = [r["id"] for r in self.active_reservations()
+                   if r["agent"] == agent and r["reason"] == task_id]
+        mode = "ids"
+        if not ids and paths:
+            mode, args = "paths", paths
+        if not ids and not paths:
+            return {"released": 0, "mode": "none", "note": f"no active reservations with reason={task_id}"}
+
+        released = 0
+        if mode == "ids":
+            for rid in ids:  # one-by-one: multi-id value format undocumented
+                proc = self._am("file_reservations", "release",
+                                self.project_key, agent, "--ids", rid, check=False)
+                if proc.returncode == 0 and "Released" in proc.stdout:
+                    released += 1
+                else:
+                    raise AgentMailError(
+                        f"release --ids {rid} failed rc={proc.returncode}: {proc.stderr[:200]}")
+        else:
+            for p in args:  # type: ignore[possibly-undefined]
+                proc = self._am("file_reservations", "release",
+                                self.project_key, agent, "--paths", p, check=False)
+                if proc.returncode == 0 and "Released" in proc.stdout:
+                    released += 1
+
+        remaining = [r for r in self.active_reservations() if r["agent"] == agent]
+        still_task = [r for r in remaining if r["reason"] == task_id]
+        return {
+            "released": released, "mode": mode, "task_id": task_id,
+            "remaining_for_agent": len(remaining),
+            "task_reservations_remaining": len(still_task),  # must be 0
+            "other_reservations_intact": len(remaining) - len(still_task),
+        }
+
     # ---- messaging ----
 
     def send(self, from_role: str, to_role: str, thread_id: str, subject: str, body: str) -> dict:

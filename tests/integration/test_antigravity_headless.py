@@ -90,7 +90,8 @@ def test_cwd_is_honored():
                "--output-format", "json", "--dangerously-skip-permissions", cwd=d)
     archive("cwd-honored", ["-p", "...", "cwd=" + str(d)], proc, extra=f"marker={marker.exists()}")
     assert proc.returncode == 0, proc.stderr[-800:]
-    assert marker.exists() and marker.read_text(encoding="utf-8").strip() == "ok"
+    assert marker.exists() and marker.read_text(encoding="utf-8-sig").strip() == "ok"
+    # utf-8-sig: agy sometimes writes via PowerShell-style tools that add a BOM
 
 
 def test_runs_inside_worktree_and_repo_detection():

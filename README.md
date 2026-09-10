@@ -8,8 +8,11 @@
 
 | 阶段 | 状态 |
 |---|---|
-| P0 环境与组件验证 | **P0_TECHNICAL_GATE = PASS**（2026-09-10；ZCode Headless = DEFERRED_PRODUCT_GAP，V1 保持 Pull） |
-| P1 协作闭环 | 未开始（禁止进入，直至 P0 Exit Criteria 全过 + GPT Gate Review） |
+| P0 环境与组件验证 | **PASS / CLOSED**（2026-09-10；ZCode Headless = DEFERRED_PRODUCT_GAP，V1 保持 Pull） |
+| P1 双 Agent 协作闭环 | **PASS / CLOSED**（2026-09-10；E2E 统一 ID 闭环 + Saga 补偿实证，docs/P1-REPORT.md） |
+| P2 GPT Orchestrator | **WAITING / PRECHECK**（P2-00 Runtime Contract Hardening 执行中；未进入 P2-01） |
+
+运行时事实覆盖层：`docs/runtime-errata-v1.1.md`（spec-vs-reality 实证清单，后续实现以此为准）。
 
 设计基线：
 - `AI_Engineering_Orchestrator_实施方案_v1.0.docx`（总体方案，16 章）

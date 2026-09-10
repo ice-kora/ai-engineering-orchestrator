@@ -73,11 +73,18 @@ def ensure_demo_repo() -> None:
 
 def clean_worktrees() -> None:
     """Reset to a repeatable state (only the normal success path may clean up)."""
+    import time as _time
     for line in git("worktree", "list", "--porcelain").splitlines():
         if line.startswith("worktree ") and "demo-repo" in line:
             wt = Path(line.split(" ", 1)[1])
             if wt != DEMO_REPO and wt.exists():
+                proc = git("worktree", "remove", "--force", str(wt))
+                if not wt.exists():
+                    continue
+                # transient Windows lock (e.g. a just-exited agy child): retry once
+                _time.sleep(2)
                 git("worktree", "remove", "--force", str(wt))
+                assert not wt.exists(), f"worktree dir still locked: {wt}"
     git("worktree", "prune")
     git("checkout", "main")
     # drop task branches from previous runs (test-only scratch branches)

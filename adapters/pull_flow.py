@@ -129,7 +129,13 @@ class PullFlow:
 
     # ---- later stages ----
 
-    def finish(self, task_id: str) -> None:
-        """Release reservation and close task (called after VERIFIED + merge)."""
-        self.mail.release_all(self.agent_role)
-        self._note(f"am file_reservations release --agent {self.actor} (reason={task_id})")
+    def finish(self, task_id: str, reservation_ids: list[str] | None = None) -> dict:
+        """Task-scoped release (P2-00): only this task's leases go away.
+
+        reservation_ids from the original reserve() are preferred; otherwise the
+        REASON==task_id mapping is resolved from `am file_reservations list`.
+        """
+        result = self.mail.release_for_task(self.agent_role, task_id,
+                                            reservation_ids=reservation_ids)
+        self._note(f"am release_for_task({task_id}) -> {result}")
+        return result

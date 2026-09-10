@@ -18,10 +18,12 @@
 - L2 ZCode：Repo 理解、后端、DB、复杂重构（V1 Pull 模式）。
 - L2 Antigravity：UI、浏览器/E2E、独立 Review（Push 模式，headless `agy -p`）。
 - **实现者不得做自己任务的最终 Reviewer。**
+- **ZCode = Pull Executor**（V1 固定；ZCode Headless = DEFERRED_PRODUCT_GAP，不做逆向探索，errata E-08）。
+- **Agent Mail = am CLI Adapter**（`adapters/agent_mail.py`）；MCP compatibility 暂不继续研究（errata E-05，FALLBACK_CLI）。
 
 ## 4. 统一标识约定（强制）
 
-- Beads Task ID 是唯一任务主键（形如 `bd-a3f8e9`，pattern `^bd-[0-9a-z]{6,10}$`）。
+- Beads Task ID 是唯一任务主键。**实际格式为 bd 生成的 `<repo-prefix>-<rand4>`（如 `demo-repo-ujn`）**，以 Beads 实际输出与 `adapters/handover.py` 的校验正则 `[a-z0-9][a-z0-9-]*-[a-z0-9]{3,8}` 为准（见 docs/runtime-errata-v1.1.md E-01），不写死 `^bd-…$`。
 - Agent Mail `thread_id` == Beads Task ID；消息 subject 前缀 `[bd-xxx]`。
 - 文件预约 `reason` == Beads Task ID。
 - Git 分支：`agent/<agent-name>/<task-id>`（pattern `^agent/[a-z0-9_-]+/bd-[0-9a-z]+$`）。
@@ -57,8 +59,8 @@ Beads 只存粗粒度（`open` / `in_progress` / `blocked` / `closed`）；细�
 - API Key / 密码只进 `.env`（已 gitignore）；严禁硬编码、严禁提交。
 - 不操作生产服务器/数据库/发布；高危动作必须 Human Approval。
 
-## 10. 当前阶段纪律
+## 10. 阶段纪律（更新于 2026-09-10）
 
-- **P0 未全部通过前禁止进入 P1**；P0 Exit = 组件全部可独立工作（bd / Agent Mail / MCP / agy / Worktree + healthcheck + demo repo）。
-- P0 期间不实现：Orchestrator、Model Router、自动调度、完整生产 Adapter、自动 Merge、Saga/心跳/熔断运行时代码（v1.1 已定义契约，P1+ 按契约实现）。
-- 所有验证结论必须附证据（实际命令 + 输出摘要 + 文件路径），存 `docs/p0-evidence/`。
+- 当前阶段状态：P0 = PASS/CLOSED；P1 = PASS/CLOSED；**P2 = WAITING/PRECHECK**（P2-00 Runtime Contract Hardening 完成后停在 P2-01 之前，等待 GPT 正式放行）。
+- 规范与运行时冲突时以 `docs/runtime-errata-v1.1.md` 为事实覆盖层（推翻需新证据 + GPT 裁决）。
+- 所有验证结论必须附证据（实际命令 + 输出摘要 + 文件路径），存 `docs/p0-evidence/`、`docs/p1-evidence/`。
