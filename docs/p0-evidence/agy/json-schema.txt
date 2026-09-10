@@ -1,7 +1,7 @@
 $ -p 17+25 --json-schema ...
 exit=0
 --- stdout ---
-{"conversation_id":"64432f40-950f-4b3a-927f-5a9ed07b0c2b","status":"SUCCESS","response":"{\"sum\":42,\"toolAction\":\"Completing task\",\"toolSummary\":\"Task completion\"}\n","duration_seconds":6.3998212,"num_turns":1,"structured_output":{"sum":42},"json_schema":{"type":"object","properties":{"sum":{"type":"integer"}},"required":["sum"],"additionalProperties":false},"usage":{"input_tokens":8292,"output_tokens":1385,"thinking_tokens":1355,"cache_read_tokens":8138,"total_tokens":9677}}
+{"conversation_id":"00e67d3e-eafd-46c1-ad8e-50c53efbb64b","status":"SUCCESS","response":"{\"sum\":42,\"toolAction\":\"Finishing task\",\"toolSummary\":\"Task completion\"}\n","duration_seconds":6.7110710000000005,"num_turns":1,"structured_output":{"sum":42},"json_schema":{"type":"object","properties":{"sum":{"type":"integer"}},"required":["sum"],"additionalProperties":false},"usage":{"input_tokens":16422,"output_tokens":1445,"thinking_tokens":1415,"cache_read_tokens":0,"total_tokens":17867}}
 
 --- stderr ---
 N/A

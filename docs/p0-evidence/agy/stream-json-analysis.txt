@@ -5,4 +5,4 @@ N/A
 --- stderr ---
 N/A
 --- extra ---
-ndjson_events=4 has_result=True
+ndjson_events=5 has_result=True

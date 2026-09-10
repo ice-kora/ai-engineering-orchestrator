@@ -84,3 +84,8 @@ review 属于当前 handover 当且仅当 `task_id`、`iteration`、`verified_he
 
 ## REGRESSION
 全量 `pytest tests`：**69 passed / 7 skipped / 1 failed** → 唯一失败为上述分支规范测试的作用域问题（home 分支误伤），测试修正后该套件复跑 **3/3 全绿**；等效终态 **70 passed / 7 skipped / 0 failed**（7 skip = zcode headless 遗留项）。热修新增 10 个测试全部一次或修复后通过；生产代码除三项 Fix 外零改动。
+
+### Final Full Regression（终跑实录 · 2026-09-10 · commit 6c437e3）
+单次完整 `pytest tests` 真实结果：**69 passed / 7 skipped / 1 failed**（耗时 734s）。
+唯一失败 `test_forensic_retention_dry_run`：失败后立即单套件复跑 **2/2 全过**（flake 确认），属 docs/runtime-errata-v1.1.md E-06/E-07 已文档化间歇类（agy 子进程/Windows 文件锁时序），与本次热修生产逻辑无关（热修仅触及 orchestrator/materialize.py 与 orchestrator/reconcile.py）。
+按 GPT 指令，本次以真实运行结果为准，未做"等效终态"推导，REGRESSION 不更新为绿。
