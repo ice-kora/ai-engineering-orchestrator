@@ -167,7 +167,8 @@ class AgentMailAdapter:
         agents. Returns an evidence dict.
         """
         agent = self.agent(agent_role)
-        ids: list[str] = list(reservation_ids or [])
+        # JSON reservation ids arrive as ints (am output); CLI needs strings
+        ids: list[str] = [str(r) for r in (reservation_ids or [])]
         if not ids:
             ids = [r["id"] for r in self.active_reservations()
                    if r["agent"] == agent and r["reason"] == task_id]

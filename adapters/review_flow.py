@@ -56,17 +56,18 @@ def build_and_validate_handover(*, task_id: str, iteration: int, worktree: Path,
                                 known_risks: list[str] | None = None,
                                 test_evidence: dict | None = None) -> dict:
     head = git_ref(worktree, "HEAD")
+    evidence = test_evidence or run_tests(worktree)  # evaluate exactly once
     payload = handover.build_handover(
         task_id=task_id, iteration=iteration,
         worktree_path=str(worktree.resolve()), branch_name=branch,
         base_commit=base, head_commit=head,
         affected_files=changed_files(worktree, base, head),
-        test_command=(test_evidence or run_tests(worktree))["command"],
-        test_exit_code=(test_evidence or run_tests(worktree))["exit_code"],
-        total_tests=(test_evidence or run_tests(worktree))["total_tests"],
-        passed_tests=(test_evidence or run_tests(worktree))["passed_tests"],
-        failed_tests=(test_evidence or run_tests(worktree))["failed_tests"],
-        output_summary=(test_evidence or run_tests(worktree))["output_summary"],
+        test_command=evidence["command"],
+        test_exit_code=evidence["exit_code"],
+        total_tests=evidence["total_tests"],
+        passed_tests=evidence["passed_tests"],
+        failed_tests=evidence["failed_tests"],
+        output_summary=evidence["output_summary"],
         deliverable_summary=deliverable_summary, known_risks=known_risks,
     )
     errors = handover.validate_payload(payload, "handover")

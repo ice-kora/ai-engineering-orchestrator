@@ -30,3 +30,4 @@ Thumbs.db
 local/
 sandbox/bd-server-probe/
 sandbox/agy-scratch/
+sandbox/orchestrator-state/

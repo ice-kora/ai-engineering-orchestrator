@@ -1,0 +1,12 @@
+plan plan-shipping-114138-fabe10 PLANNED (tasks: ['shipping-core', 'shipping-boundaries'])
+approval: APPROVED by human at 2026-09-10T11:41:38
+apply: created=['shipping-core', 'shipping-boundaries'] reused=[] deps=1 beads_count=2
+re-apply: created=[] (must be empty) count=2
+DAG: shipping-core=READY_FOR_PULL, shipping-boundaries=WAIT_DEPENDENCY
+A implemented: tests 10/10, handover valid
+reconcile#1 action: START_REVIEW executed: verdict=APPROVED iteration=1 worktree_clean=True
+A review verdict: APPROVED
+A closed + reservation released
+reconcile#2: shipping-boundaries -> READY_FOR_PULL | action: NOTIFIED + ACTION_REQUIRED: ZCode /pull-task demo-repo-mm1 (mail thread demo-repo-mm1)
+B tests 13/13; reconcile#3: START_REVIEW executed: verdict=APPROVED iteration=1 worktree_clean=True
+final: plan_status=DONE states=[('shipping-core', 'DONE'), ('shipping-boundaries', 'DONE')]

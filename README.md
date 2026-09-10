@@ -10,7 +10,8 @@
 |---|---|
 | P0 环境与组件验证 | **PASS / CLOSED**（2026-09-10；ZCode Headless = DEFERRED_PRODUCT_GAP，V1 保持 Pull） |
 | P1 双 Agent 协作闭环 | **PASS / CLOSED**（2026-09-10；E2E 统一 ID 闭环 + Saga 补偿实证，docs/P1-REPORT.md） |
-| P2 GPT Orchestrator | **WAITING / PRECHECK**（P2-00 Runtime Contract Hardening 执行中；未进入 P2-01） |
+| P2-00 Runtime Contract Hardening | **PASS / CLOSED**（2026-09-10；task-scoped release + errata 事实覆盖层） |
+| P2-01 Orchestrator Kernel | **IN PROGRESS**（确定性内核：Plan/DAG/Reconciliation 已实现并全链路验证，等待 GPT Gate；`scripts/orchestrate.py`） |
 
 运行时事实覆盖层：`docs/runtime-errata-v1.1.md`（spec-vs-reality 实证清单，后续实现以此为准）。
 
