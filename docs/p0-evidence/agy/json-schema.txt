@@ -1,7 +1,7 @@
 $ -p 17+25 --json-schema ...
 exit=0
 --- stdout ---
-{"conversation_id":"11c84de6-7b93-4940-88cc-26c025ac3bf3","status":"SUCCESS","response":"{\"sum\":42,\"toolAction\":\"Complete calculation\",\"toolSummary\":\"Finish task\"}\n","duration_seconds":4.4169394,"num_turns":1,"structured_output":{"sum":42},"json_schema":{"type":"object","properties":{"sum":{"type":"integer"}},"required":["sum"],"additionalProperties":false},"usage":{"input_tokens":16424,"output_tokens":958,"thinking_tokens":929,"cache_read_tokens":0,"total_tokens":17382}}
+{"conversation_id":"a8945b3d-5015-406d-bc1a-5382be6e0405","status":"SUCCESS","response":"{\"sum\":42,\"toolAction\":\"Finishing task\",\"toolSummary\":\"Calculate sum\"}\n","duration_seconds":8.1023354,"num_turns":1,"structured_output":{"sum":42},"json_schema":{"type":"object","properties":{"sum":{"type":"integer"}},"required":["sum"],"additionalProperties":false},"usage":{"input_tokens":16427,"output_tokens":1817,"thinking_tokens":1787,"cache_read_tokens":0,"total_tokens":18244}}
 
 --- stderr ---
 N/A

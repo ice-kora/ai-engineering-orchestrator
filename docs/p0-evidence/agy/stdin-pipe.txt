@@ -1,7 +1,7 @@
 $ (no -p) stdin=Reply...
 exit=0
 --- stdout ---
-{"conversation_id":"12d76000-dbf4-4702-a13f-a3b2fb5f773c","status":"SUCCESS","response":"OK\n","duration_seconds":1.7809688000000001,"num_turns":1,"usage":{"input_tokens":8063,"output_tokens":152,"thinking_tokens":151,"cache_read_tokens":8139,"total_tokens":8215}}
+{"conversation_id":"40a85e39-9bdf-4c07-9ad3-6cc5bca2f270","status":"SUCCESS","response":"OK\n","duration_seconds":1.8826988,"num_turns":1,"usage":{"input_tokens":8059,"output_tokens":41,"thinking_tokens":40,"cache_read_tokens":8139,"total_tokens":8100}}
 
 --- stderr ---
 N/A

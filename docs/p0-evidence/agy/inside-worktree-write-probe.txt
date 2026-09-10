@@ -1,7 +1,7 @@
 $ -p create marker cwd=D:\workspace\ai-engineering-orchestrator\sandbox\demo-repo\worktrees\agent-zcode
 exit=0
 --- stdout ---
-{"conversation_id":"792f6b19-ba22-4b24-9ed6-da5b5cf8c241","status":"SUCCESS","response":"DONE\n","duration_seconds":57.2999437,"num_turns":1,"usage":{"input_tokens":84940,"output_tokens":5473,"thinking_tokens":3886,"cache_read_tokens":272424,"total_tokens":90413}}
+{"conversation_id":"483b51ab-2292-4732-89da-cb986ae88102","status":"SUCCESS","response":"DONE\n","duration_seconds":18.5592183,"num_turns":1,"usage":{"input_tokens":53150,"output_tokens":2846,"thinking_tokens":2475,"cache_read_tokens":52842,"total_tokens":55996}}
 
 --- stderr ---
 N/A

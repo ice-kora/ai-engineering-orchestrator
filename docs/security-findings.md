@@ -18,6 +18,11 @@ Move secrets outside repository/configuration where possible,
 rotate exposed credential,
 and use a least-privilege account.
 
+Follow-up Cleanup Tasks:
+- Remove legacy dbhub MCP configuration from local agent configuration
+- Remove legacy DSN / credential references
+- Confirm database connection is no longer accessible or used by Agents
+
 ---
 
 ## SECURITY-002

@@ -1,7 +1,7 @@
 $ --version
 exit=0
 --- stdout ---
-1.1.28
+1.2.0
 
 --- stderr ---
 N/A
