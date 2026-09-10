@@ -13,7 +13,8 @@
 | P2-00 Runtime Contract Hardening | **PASS / CLOSED**（2026-09-10；task-scoped release + errata 事实覆盖层） |
 | P2-01 Orchestrator Kernel | **PASS / CLOSED**（2026-09-10 GPT Final Gate；含 State-Integrity Hotfix 三项；Final Regression 69/7/1，唯一失败为 KNOWN_FLAKE_WAIVER=ACCEPTED，FLAKE-001 登记） |
 | P2-02 LLM Planner | **PASS / CLOSED**（`PLANNER_BACKEND = CODEX_CLI_SUBSCRIPTION`；Responses API = optional dormant，NOT_USED；Real Smoke SUCCESS） |
-| P2-03 Decision/Arbitration Layer | **实现完成，回归收尾中**（Final Gate + Review Arbitration：request 不可变持久化、plan 终态生命周期、双 Decision 契约、grounding retry、host 复核不变量；T1-T15 全绿；双真实 Demo SUCCESS——APPROVED→DONE 与 FOLLOWUP→FINAL_FIX_REQUIRED 零自动建任务） |
+| P2-03 Decision/Arbitration Layer | **PASS / CLOSED**（2026-09-10 GPT Final Gate；含 Product Wiring Hotfix：CLI 引擎接入/review history/FinalGateContext 独立校验） |
+| P2-04 Run Controller | **IN PROGRESS**（RunController：observe→选步→执行→journal→重读→停在人的边界；bounded pump 非 daemon；C1-C4 crash recovery） |
 
 运行时事实覆盖层：`docs/runtime-errata-v1.1.md`（spec-vs-reality 实证清单，后续实现以此为准）。
 

@@ -29,7 +29,9 @@ from orchestrator.planner import JsonPlanner  # noqa: E402
 from orchestrator.reconcile import Reconciler  # noqa: E402
 from orchestrator.store import Store  # noqa: E402
 
-STORE_ROOT = ROOT / "sandbox" / "orchestrator-state"
+import os as _os
+_OVERRIDE = _os.environ.get("STORE_ROOT_OVERRIDE")
+STORE_ROOT = Path(_OVERRIDE) if _OVERRIDE else (ROOT / "sandbox" / "orchestrator-state")
 
 
 def _repo_path(target: str) -> Path:
@@ -51,6 +53,12 @@ def main() -> int:
     p_apply = sub.add_parser("apply"); p_apply.add_argument("plan_id")
     p_status = sub.add_parser("status"); p_status.add_argument("plan_id")
     p_rec = sub.add_parser("reconcile"); p_rec.add_argument("plan_id"); p_rec.add_argument("--dry-run", action="store_true")
+    p_start = sub.add_parser("start"); p_start.add_argument("request")
+    p_start.add_argument("--planner", default="codex", choices=["codex", "gpt", "json"])
+    p_start.add_argument("--plan-doc", default=None)
+    p_cont = sub.add_parser("continue"); p_cont.add_argument("plan_id")
+    p_cont.add_argument("--max-steps", type=int, default=10)
+    p_rs = sub.add_parser("run-status"); p_rs.add_argument("plan_id")
     args = parser.parse_args()
 
     store = Store(STORE_ROOT)
@@ -155,6 +163,67 @@ def main() -> int:
         result = Reconciler(store, beads, mail, **engines).reconcile_plan(
             args.plan_id, execute=(args.cmd == "reconcile" and not args.dry_run))
         print(json.dumps(result, ensure_ascii=False, indent=1))
+        return 0
+
+    if args.cmd == "start":
+        request = contracts.UserRequest.from_dict(contracts.load_json(args.request))
+        if args.planner == "json":
+            if not args.plan_doc:
+                print("--planner json requires --plan-doc")
+                return 2
+            import copy as _copy
+            doc = _copy.deepcopy(contracts.load_json(args.plan_doc))
+            if "PLACEHOLDER" in (doc.get("plan_id", ""), doc.get("request_id", "")):
+                import uuid as _uuid
+                doc["plan_id"] = f"plan-{request.request_id.removeprefix('req-')[:20]}-{_uuid.uuid4().hex[:6]}"
+            plan = JsonPlanner(doc).plan(request)
+        elif args.planner == "gpt":
+            from orchestrator.gpt_planner import GPTPlanner, GPTPlannerError
+            gp = GPTPlanner(_repo_path(request.target_repo),
+                            evidence_dir=STORE_ROOT.parent / "planner-evidence")
+            try:
+                plan, _ = gp.plan(request)
+            except GPTPlannerError as exc:
+                print(f"PLAN_NOT_SAVED: {exc}"); return 2
+        else:
+            from orchestrator.codex_planner import CodexCLIPlanner
+            from orchestrator.gpt_planner import GPTPlannerError
+            cp = CodexCLIPlanner(_repo_path(request.target_repo),
+                                 evidence_dir=STORE_ROOT.parent / "planner-evidence")
+            try:
+                plan, _ = cp.plan(request)
+            except GPTPlannerError as exc:
+                print(f"PLAN_NOT_SAVED: {exc}"); return 2
+        plan.validate_dag()
+        store.save_request(request.to_dict())
+        store.save_plan(plan, status="PLANNED")
+        print(json.dumps({"PLAN_CREATED": True, "plan_id": plan.plan_id,
+                          "planner": args.planner, "status": "PLANNED",
+                          "tasks": [t.task_key for t in plan.tasks],
+                          "HUMAN_APPROVAL_REQUIRED": True,
+                          "next": f"orchestrate approve {plan.plan_id}"},
+                         ensure_ascii=False, indent=1))
+        return 0
+
+    if args.cmd == "continue":
+        plan = store.plan(args.plan_id)
+        beads = BeadsAdapter(_repo_path(plan.target_repo))
+        mail = AgentMailAdapter(_repo_path(plan.target_repo))
+        from orchestrator.run_controller import RunController
+        from pathlib import Path as _P
+        ctrl = RunController(store, beads, mail,
+                             evidence_dir=_P(STORE_ROOT).parent / "planner-evidence")
+        result = ctrl.continue_run(args.plan_id, max_steps=args.max_steps)
+        print(json.dumps(result.to_dict(), ensure_ascii=False))  # single-line JSON
+        return 0
+
+    if args.cmd == "run-status":
+        plan = store.plan(args.plan_id)
+        beads = BeadsAdapter(_repo_path(plan.target_repo))
+        mail = AgentMailAdapter(_repo_path(plan.target_repo))
+        from orchestrator.run_controller import RunController
+        ctrl = RunController(store, beads, mail)  # read-only: no engines constructed
+        print(json.dumps(ctrl.snapshot(args.plan_id), ensure_ascii=False))
         return 0
 
     return 1

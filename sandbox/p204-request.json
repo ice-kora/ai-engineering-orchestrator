@@ -1,0 +1,11 @@
+{
+ "request_id": "req-p204-371ae6",
+ "target_repo": "D:\\workspace\\ai-engineering-orchestrator\\sandbox\\demo-repo",
+ "title": "为订单模块增加取消订单原因校验",
+ "description": "为订单模块增加取消订单原因校验：空原因拒绝，最长 200 字符，保留正常取消流程，补充边界测试。",
+ "constraints": [
+  "sandbox only",
+  "stdlib unittest"
+ ],
+ "created_at": "2026-09-10"
+}

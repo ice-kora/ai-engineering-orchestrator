@@ -1,0 +1,19 @@
+START: plan=plan-p204-371ae6-3dea1a planner=json status=PLANNED
+CONTINUE#1: PAUSED (approval required) steps=0
+APPROVED by human
+R1 CONTINUE: PAUSED | ACTION_REQUIRED_PULL | last=
+  IMPL demo-repo-jtv6: 20/20 tests
+  R1 review: START_REVIEW executed: verdict=APPROVED iteration=1 worktree_clean=Tru
+  review #1: APPROVED
+  MERGED+closed demo-repo-jtv6
+R2 CONTINUE: DONE |  | last=FINAL_GATE APPROVED + host invariant OK -> DONE
+  ALL TASKS DONE — plan DONE
+=== SIMULATED CRASH: after last close (demo-repo-jtv6) ===
+CONTINUE#4 (new process, crash recovery): outcome=DONE status=DONE steps=0
+FINAL: plan_status=DONE
+  gate verdict: APPROVED
+  SATISFIED: Reject empty cancellation reasons
+  SATISFIED: Enforce a maximum length of 200 characters
+  SATISFIED: Preserve the normal cancellation flow
+  SATISFIED: Add boundary tests
+  SATISFIED: Respect sandbox-only and stdlib unittest constrain

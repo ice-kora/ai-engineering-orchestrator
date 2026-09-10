@@ -68,6 +68,9 @@ class FinalGateContextBuilder:
                 raise FinalGateForbidden(f"{ptask.task_key}: no review", category="final_gate_forbidden")
             # P2-03 hotfix Fix-3: independent FULL validation before the review
             # may enter the context — schema first, then freshness, then verdict.
+            # underscore-prefixed keys are internal annotations (worktree-clean
+            # flag, conversation id) — strip before strict-schema validation
+            review = {k: v for k, v in review.items() if not str(k).startswith("_")}
             from adapters import handover as _hm
             if _hm.validate_payload(review, "review"):
                 raise FinalGateForbidden(
