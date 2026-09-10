@@ -1,7 +1,7 @@
 $ -p create marker attempt=1 cwd=D:\workspace\ai-engineering-orchestrator\sandbox\demo-repo\worktrees\agent-zcode
 exit=0
 --- stdout ---
-{"conversation_id":"83511fc2-fa29-4612-ba2f-3b9610636683","status":"SUCCESS","response":"DONE\n","duration_seconds":67.7752264,"num_turns":1,"usage":{"input_tokens":78862,"output_tokens":4650,"thinking_tokens":3360,"cache_read_tokens":243530,"total_tokens":83512}}
+{"conversation_id":"fcf64dd7-a34c-4dad-a040-2af3cbde1633","status":"SUCCESS","response":"DONE\n\nCreated [agy-wt-marker.txt](file:///D:/workspace/ai-engineering-orchestrator/sandbox/demo-repo/worktrees/agent-zcode/agy-wt-marker.txt).\n","duration_seconds":23.4750156,"num_turns":1,"usage":{"input_tokens":46712,"output_tokens":2043,"thinking_tokens":1524,"cache_read_tokens":77216,"total_tokens":48755}}
 
 --- stderr ---
 N/A

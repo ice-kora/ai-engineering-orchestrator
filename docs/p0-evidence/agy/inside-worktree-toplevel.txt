@@ -1,7 +1,7 @@
 $ -p git rev-parse cwd=D:\workspace\ai-engineering-orchestrator\sandbox\demo-repo\worktrees\agent-zcode
 exit=0
 --- stdout ---
-{"conversation_id":"07788c0e-2134-474d-84fe-c0643c4a9e3e","status":"SUCCESS","response":"D:/workspace/ai-engineering-orchestrator\n","duration_seconds":32.3628783,"num_turns":1,"usage":{"input_tokens":47696,"output_tokens":2347,"thinking_tokens":1739,"cache_read_tokens":117840,"total_tokens":50043}}
+{"conversation_id":"c0413bb0-66bb-48ad-93da-bf64a1278653","status":"SUCCESS","response":"fatal: not a git repository (or any of the parent directories): .git\n","duration_seconds":25.6478467,"num_turns":1,"usage":{"input_tokens":66231,"output_tokens":2809,"thinking_tokens":2349,"cache_read_tokens":77212,"total_tokens":69040}}
 
 --- stderr ---
 N/A

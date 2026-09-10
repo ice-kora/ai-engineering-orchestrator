@@ -158,7 +158,11 @@ def test_f4_stale_state_reread(env):
     beads.close(tid, "external close between reconciles", "test")  # mutate truth externally
 
     r2 = recon.reconcile_plan(plan.plan_id, execute=False)  # same Reconciler instance
-    assert r2["tasks"][0]["state"] == State.DONE.value, "reconcile must re-read, not cache"
+    # Fix-3 semantics: a bare external close (no handover/review/merge) is NOT
+    # DONE — it is INCONSISTENT_CLOSED. The state CHANGE from READY_FOR_PULL
+    # proves the re-read (a cached view would still say READY_FOR_PULL).
+    assert r2["tasks"][0]["state"] == State.INCONSISTENT_CLOSED.value,         "reconcile must re-read, not cache"
+    assert r2["tasks"][0]["beads_status"] == "closed"
 
 
 # ---- F5 invalid handover must NOT start review ----

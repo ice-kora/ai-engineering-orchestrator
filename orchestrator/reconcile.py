@@ -35,6 +35,7 @@ class State(str, Enum):
     FIX_REQUIRED = "FIX_REQUIRED"
     READY_TO_CLOSE = "READY_TO_CLOSE"
     BLOCKED = "BLOCKED"
+    INCONSISTENT_CLOSED = "INCONSISTENT_CLOSED"
     DONE = "DONE"
     ESCALATE = "ESCALATE"
 
@@ -61,8 +62,12 @@ class TaskRuntimeState:
     deps_remaining: list[str] = field(default_factory=list)
     handover_valid: bool | None = None
     handover_errors: list[str] = field(default_factory=list)
-    review_verdict: str | None = None
+    review_verdict: str | None = None        # EFFECTIVE verdict (fresh only)
     review_iteration: int | None = None
+    review_current: bool | None = None       # None: no review pair to compare
+    review_stale: bool = False              # a review exists but is not current
+    stale_review_verdict: str | None = None
+    failed_invariants: list[str] = field(default_factory=list)
     branch: str = ""
     branch_head: str = ""
     merged_to_main: bool = False
@@ -107,6 +112,47 @@ class Reconciler:
         merged = self._git("merge-base", "--is-ancestor", branch, "main")
         return branch, head.stdout.strip()[:12], merged.returncode == 0
 
+    # ---- review freshness contract (P2-01 hotfix Fix-2) ----
+
+    @staticmethod
+    def _head_matches(verified: str, head: str) -> bool:
+        """verified may be a short (>=7 char) prefix of the full head."""
+        return bool(verified) and bool(head) and (verified == head or head.startswith(verified))
+
+    def _review_is_current(self, handover: dict, review: dict) -> bool:
+        return (
+            review.get("task_id") == handover.get("task_id")
+            and review.get("iteration") == handover.get("iteration")
+            and self._head_matches(review.get("verified_head_commit", ""),
+                                   handover.get("git_context", {}).get("head_commit", ""))
+        )
+
+    # ---- completion invariant (P2-01 hotfix Fix-3) ----
+
+    def _completion_invariant(self, task_id: str, handover: dict | None,
+                              handover_valid: bool, review: dict | None,
+                              review_current: bool) -> tuple[bool, list[str]]:
+        failures: list[str] = []
+        if handover is None:
+            failures.append("no handover on record")
+        elif not handover_valid:
+            failures.append("handover schema-invalid")
+        if review is None:
+            failures.append("no review on record")
+        else:
+            if not review_current:
+                failures.append("review not current (task/iteration/head mismatch)")
+            elif review.get("verdict") != "APPROVED":
+                failures.append(f"review verdict={review.get('verdict')} (need APPROVED)")
+        if handover is not None and handover_valid:
+            head = handover.get("git_context", {}).get("head_commit", "")
+            merged = self._git("merge-base", "--is-ancestor", head, "main")
+            if merged.returncode != 0:
+                failures.append("verified head not merged into main")
+        if any(r["reason"] == task_id for r in self.mail.active_reservations()):
+            failures.append("task reservation still held")
+        return (not failures), failures
+
     # ---- per-task state computation ----
 
     def task_state(self, plan: contracts.ExecutionPlan, ptask) -> TaskRuntimeState:
@@ -136,13 +182,30 @@ class Reconciler:
             errors = handover_mod.validate_payload(handover, "handover")
             handover_valid = not errors
         review = self.store.review(task_id)
-        review_verdict = review.get("verdict") if review else None
+        review_current: bool | None = None
+        review_stale = False
+        review_verdict = None
         review_iter = review.get("iteration") if review else None
+        if review is not None and handover is not None:
+            review_current = self._review_is_current(handover, review)
+            if review_current:
+                review_verdict = review.get("verdict")
+            else:
+                review_stale = True
+        elif review is not None:
+            review_stale = True  # review without a comparable handover cannot count
         branch, head, merged = self._branch_facts(task_id)
         reservation = any(r["reason"] == task_id for r in self.mail.active_reservations())
 
+        failures: list[str] = []
         if status == "closed":
-            state, action = State.DONE, NextAction.NONE
+            ok, failures = self._completion_invariant(
+                task_id, handover, bool(handover_valid), review, bool(review_current))
+            if ok:
+                state, action = State.DONE, NextAction.NONE
+            else:
+                # closed in Beads but completion facts do not hold — never DONE
+                state, action = State.INCONSISTENT_CLOSED, NextAction.NONE
         elif status == "open":
             if deps_remaining:
                 state, action = State.WAIT_DEPENDENCY, NextAction.WAIT
@@ -158,9 +221,20 @@ class Reconciler:
                 state = State.READY_TO_CLOSE
                 action = NextAction.ACTION_REQUIRED_CLOSE
             elif handover_valid:
+                # fresh-handover path: stale reviews (incl. old APPROVED) never
+                # close a newer head — review reopens instead
                 state, action = State.READY_FOR_REVIEW, NextAction.START_REVIEW
             else:
                 state, action = State.IMPLEMENTING, NextAction.ACTION_REQUIRED_IMPLEMENT
+
+        note = ""
+        if handover is not None and not handover_valid:
+            note = "schema-invalid handover: review forbidden"
+        elif review_stale:
+            note = (f"stale review ignored (task/iteration/head mismatch; "
+                    f"old verdict={review.get('verdict')})")
+        elif state == State.INCONSISTENT_CLOSED:
+            note = "closed but completion invariants failed: " + "; ".join(failures)
 
         return TaskRuntimeState(
             task_key=ptask.task_key, beads_task_id=task_id,
@@ -168,9 +242,12 @@ class Reconciler:
             beads_status=status, labels=labels, deps_remaining=deps_remaining,
             handover_valid=handover_valid, handover_errors=errors,
             review_verdict=review_verdict, review_iteration=review_iter,
+            review_current=review_current, review_stale=review_stale,
+            stale_review_verdict=review.get("verdict") if review_stale else None,
+            failed_invariants=failures if state == State.INCONSISTENT_CLOSED else [],
             branch=branch, branch_head=head, merged_to_main=merged,
             reservation_held=reservation,
-            note="schema-invalid handover: review forbidden" if handover is not None and not handover_valid else "")
+            note=note)
 
     # ---- one-step plan reconcile ----
 

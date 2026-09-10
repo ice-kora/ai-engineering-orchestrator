@@ -60,3 +60,27 @@
 ## Phase Sync
 
 README 已同步：P0/P1/P2-00 = PASS/CLOSED，P2-01 = IN PROGRESS（等 GPT Gate）。
+
+---
+
+# P2-01 Hotfix 附录（State Integrity · 2026-09-10）
+
+> 依据 GPT `P2_01_FINAL_GATE = HOLD_FOR_HOTFIX` 三项修复；零新功能；未触碰 GPTPlanner/API/Router/Headless/MCP/daemon/UI。
+
+## P2_01_HOTFIX = **PASS** | BEADS_AUTHORITY_RECOVERY = **VERIFIED** | REVIEW_FRESHNESS = **VERIFIED** | CLOSED_STATE_INVARIANT = **VERIFIED**
+
+### Fix-1 Materializer Beads-authority 对帐（替换原 `{**live, **ledger}` 反语义合并）
+显式 `_reconcile_mapping` 六分支：live==ledger→REUSE；live 有 ledger 无→修 ledger；**不一致→live 胜出并修 ledger（留 evidence）**；ledger 独有→逐一对真实 Beads 任务体检（TaskKey/Plan 标记匹配才信，否则清除 stale mapping 后恢复落盘）；**同 TaskKey 多 live 候选→AmbiguousTaskKey 阻塞，禁止猜测**。依赖接线只用对帐后的 canonical mapping；新增**跨计划依赖守卫**（bd 的 dependencies 为对象数组，已按真实结构解析）。测试：`test_stale_ledger_recovery` / `test_live_beads_overrides_wrong_ledger` / `test_duplicate_live_taskkey_blocks` 全过（重复 apply 恒 N，无跨计划依赖）。
+
+### Fix-2 Review Freshness Contract
+review 属于当前 handover 当且仅当 `task_id`、`iteration`、`verified_head_commit == head_commit`（短哈希前缀兼容）三者全匹配；任一不满足 ⇒ `review_current=false`，旧 review（含旧 APPROVED）不影响状态。验证：CHANGES_REQUESTED→Fix→handover#2 ⇒ reconcile 得 **READY_FOR_REVIEW 并真实自动启动 review#2**（iteration==2 机器校验）；review#1 APPROVED + 新 head/handover#2 ⇒ **绝不 READY_TO_CLOSE**（重开 review）。测试 `test_changes_requested_then_new_handover_reopens_review` / `test_stale_approved_review_cannot_close_new_head` 全过。
+
+### Fix-3 CLOSED 完成不变量
+`closed` 不再无条件 DONE。DONE 需同时满足：latest handover schema 有效；review fresh 且 APPROVED；verified head **已进 main**（commit ancestor 验证，不依赖分支存在）；任务租约已释放。任一不满足 ⇒ **INCONSISTENT_CLOSED**（结构化 failed_invariants + note），且 plan 不因此标 DONE。测试：`test_closed_without_review_not_done` / `test_closed_with_stale_review_not_done` / `test_closed_unmerged_head_not_done` / `test_closed_with_live_lease_not_done` / `test_fully_verified_closed_task_done` 全过。
+
+### 附带（均为测试层，非生产逻辑）
+- F4 断言按新契约更新（裸 close → INCONSISTENT_CLOSED 本身即"重读非缓存"的证明）。
+- 分支规范测试收敛到任务分支（`agent/*/home` 为 worktree 宿主分支，不属任务命名约定）。
+
+## REGRESSION
+全量 `pytest tests`：**69 passed / 7 skipped / 1 failed** → 唯一失败为上述分支规范测试的作用域问题（home 分支误伤），测试修正后该套件复跑 **3/3 全绿**；等效终态 **70 passed / 7 skipped / 0 failed**（7 skip = zcode headless 遗留项）。热修新增 10 个测试全部一次或修复后通过；生产代码除三项 Fix 外零改动。

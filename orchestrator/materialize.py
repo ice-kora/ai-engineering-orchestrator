@@ -44,42 +44,99 @@ class Materializer:
 
     # ---- truth helpers ----
 
-    def _plan_labeled_ids(self, plan_id: str) -> dict[str, str]:
-        """Live Beads truth: {task_key: beads_id} recovered from task bodies.
+    class AmbiguousTaskKey(BeadsError):
+        """Same TaskKey found on multiple live Beads tasks — refuses to guess."""
 
-        Every materialized task embeds `TaskKey: <key>` / `Plan: <plan_id>` in
-        its description, so recovery works via `bd list --desc-contains` even
-        if the ledger file was lost. Beads is the authority; the ledger only
-        accelerates.
-        """
+    def _live_candidates(self, plan_id: str) -> dict[str, list[str]]:
+        """Live Beads truth: {task_key: [beads_id, ...]} (duplicate-aware)."""
         import json
         proc = self.beads._run("list", "--json", "--desc-contains", f"Plan: {plan_id}")
         items = json.loads(proc.stdout or "[]")
-        found: dict[str, str] = {}
+        found: dict[str, list[str]] = {}
         for item in items:
             for line in (item.get("description") or "").splitlines():
                 if line.strip().startswith("TaskKey:"):
                     key = line.split(":", 1)[1].strip()
                     if key:
-                        found[key] = item["id"]
+                        found.setdefault(key, []).append(item["id"])
         return found
+
+    def _ledger_id_verifies(self, beads_id: str, task_key: str, plan_id: str) -> bool:
+        """A ledger id is trusted ONLY if the live Beads task exists and its
+        body carries the matching TaskKey/Plan markers."""
+        import json
+        proc = self.beads._run("show", beads_id, "--json", check=False)
+        if proc.returncode != 0:
+            return False
+        items = json.loads(proc.stdout or "[]")
+        if not items:
+            return False
+        desc = items[0].get("description") or ""
+        return f"TaskKey: {task_key}" in desc and f"Plan: {plan_id}" in desc
+
+    def _reconcile_mapping(self, plan_id: str, task_keys: list[str]):
+        """Beads-authority reconciliation (P2-01 hotfix Fix-1).
+
+        Returns (canonical {task_key: beads_id}, evidence[], to_create[]).
+        Per task_key:
+          live == ledger          -> REUSE
+          live, ledger missing    -> repair ledger from live
+          live, ledger different  -> LIVE WINS, overwrite ledger, evidence
+          ledger only             -> verify against the real Beads body;
+                                     stale/wrong -> purge the ledger entry
+          multiple live ids       -> AmbiguousTaskKey (BLOCKED, never guess)
+        """
+        live = self._live_candidates(plan_id)
+        ledger = dict(self.store.mapping(plan_id))
+        canonical: dict[str, str] = {}
+        evidence: list[str] = []
+        to_create: list[str] = []
+
+        for key in task_keys:
+            live_ids = live.get(key, [])
+            if len(live_ids) > 1:
+                raise self.AmbiguousTaskKey(
+                    f"TaskKey {key!r} maps to multiple live Beads tasks {live_ids} "
+                    f"for plan {plan_id}: BLOCKED (manual arbitration required)")
+            live_id = live_ids[0] if live_ids else None
+            ledger_id = ledger.get(key)
+
+            if live_id and ledger_id == live_id:
+                canonical[key] = live_id                      # REUSE
+            elif live_id and not ledger_id:
+                self.store.put_mapping(plan_id, key, live_id)
+                evidence.append(f"ledger repaired from live: {key} -> {live_id}")
+                canonical[key] = live_id
+            elif live_id and ledger_id != live_id:
+                self.store.put_mapping(plan_id, key, live_id)
+                evidence.append(f"LIVE WINS over wrong ledger: {key} {ledger_id} -> {live_id}")
+                canonical[key] = live_id
+            elif ledger_id:
+                if self._ledger_id_verifies(ledger_id, key, plan_id):
+                    canonical[key] = ledger_id
+                    evidence.append(f"ledger id verified against Beads body: {key} -> {ledger_id}")
+                else:
+                    ledger.pop(key)
+                    self.store._write(f"mapping/{plan_id}.json", ledger)
+                    evidence.append(f"stale ledger purged: {key} !-> {ledger_id} (no such/mismatched task)")
+                    to_create.append(key)
+            else:
+                to_create.append(key)
+        return canonical, evidence, to_create
 
     def apply(self, plan: contracts.ExecutionPlan) -> ApplyReport:
         if self.store.plan_status(plan.plan_id) == "DONE":
             raise BeadsError("plan already DONE")
         self.gate.require_approved(plan.plan_id)  # P2-01.3 gate
 
-        ledger = dict(self.store.mapping(plan.plan_id))
-        live = self._plan_labeled_ids(plan.plan_id)  # Beads is the authority
-        existing = {**live, **ledger}  # ledger fills gaps Beads labels can't show
+        canonical, evidence, to_create = self._reconcile_mapping(
+            plan.plan_id, [t.task_key for t in plan.tasks])
 
         created: list[str] = []
         reused: list[str] = []
         for task in plan.tasks:
-            if task.task_key in existing:
+            if task.task_key in canonical:
                 reused.append(task.task_key)
-                if task.task_key not in ledger:
-                    self.store.put_mapping(plan.plan_id, task.task_key, existing[task.task_key])
                 continue
             description = (f"TaskKey: {task.task_key}\n"
                            f"Plan: {plan.plan_id}\n"
@@ -90,17 +147,30 @@ class Materializer:
             beads_id = self.beads.create(task.title, priority=1, description=description)
             self.beads.add_label(beads_id, f"{PLAN_LABEL_PREFIX}{plan.plan_id}", "orchestrator")
             self.store.put_mapping(plan.plan_id, task.task_key, beads_id)  # BEFORE next create
-            existing[task.task_key] = beads_id
+            canonical[task.task_key] = beads_id
             created.append(task.task_key)
 
+        # dependency wiring uses ONLY the post-reconciliation canonical mapping
         wired = 0
         for task in plan.tasks:
             for dep in task.dependencies:
-                self.beads.add_dependency(existing[task.task_key], existing[dep])
+                self.beads.add_dependency(canonical[task.task_key], canonical[dep])
                 wired += 1
 
-        final_live = self._plan_labeled_ids(plan.plan_id)
-        if len(final_live) != len(plan.tasks):
+        # guard: no cross-plan dependencies — every dep edge of a plan task
+        # must point back into this plan's canonical id set
+        import json as _json
+        plan_ids = set(canonical.values())
+        for key, bid in canonical.items():
+            show = self.beads._run("show", bid, "--json")
+            deps = (_json.loads(show.stdout or "[]")[0].get("dependencies") or [])
+            for dep in deps:  # bd emits dependency objects {id, title, ...}
+                dep_id = dep.get("id") if isinstance(dep, dict) else str(dep)
+                if dep_id not in plan_ids:
+                    raise BeadsError(f"cross-plan dependency detected: {key}({bid}) -> {dep_id}")
+
+        final_live = self._live_candidates(plan.plan_id)
+        if sum(1 for ids in final_live.values() if ids) != len(plan.tasks):
             raise BeadsError(
                 f"materialization incomplete: {len(final_live)}/{len(plan.tasks)} in Beads; "
                 "re-run apply to recover")

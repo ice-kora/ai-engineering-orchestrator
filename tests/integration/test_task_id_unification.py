@@ -34,8 +34,11 @@ def git(*args: str, cwd: Path = PROJECT_ROOT / "sandbox" / "demo-repo") -> str:
 
 def test_branch_and_commit_conventions():
     """branch `agent/<agent>/<task-id>` + commit `[<task-id>]` trailer."""
-    branches = [b.strip() for b in git("branch", "--list", "agent/*").splitlines()]
-    assert branches, "no agent branches; run test_git_worktree.py first"
+    # home branches (agent/<name>/home) are PER_AGENT worktree hosts, not task
+    # branches — the convention applies to task branches only
+    branches = [b.strip().lstrip("+ ") for b in git("branch", "--list", "agent/*").splitlines()]
+    branches = [b for b in branches if not b.endswith("/home")]
+    assert branches, "no agent task branches; run test_git_worktree.py first"
     for br in branches:
         assert BRANCH_RE.match(br), f"branch violates convention: {br}"
     log = git("log", "--grep", "\\[bd-", "--oneline", "-E", "--all")

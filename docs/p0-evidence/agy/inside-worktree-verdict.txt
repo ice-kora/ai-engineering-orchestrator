@@ -5,4 +5,4 @@ N/A
 --- stderr ---
 N/A
 --- extra ---
-toplevel='D:/workspace/ai-engineering-orchestrator' matches_worktree=False (bug #68 CONFIRMED (toplevel=parent))
+toplevel='fatal: not a git repository (or any of the parent directories): .git' matches_worktree=False (bug #68 CONFIRMED (toplevel=parent))

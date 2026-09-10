@@ -1,7 +1,7 @@
 $ -p ... cwd=D:\workspace\ai-engineering-orchestrator\sandbox\agy-scratch\cwd
 exit=0
 --- stdout ---
-{"conversation_id":"e826f003-8537-4737-b1cd-3d7e3171979d","status":"SUCCESS","response":"DONE\n\n[agy-cwd-marker.txt](file:///D:/workspace/ai-engineering-orchestrator/sandbox/agy-scratch/cwd/agy-cwd-marker.txt)\n","duration_seconds":22.096105,"num_turns":1,"usage":{"input_tokens":30844,"output_tokens":2830,"thinking_tokens":2390,"cache_read_tokens":77260,"total_tokens":33674}}
+{"conversation_id":"e90b4d09-3ab0-4730-828d-09210c2cbd28","status":"SUCCESS","response":"DONE\n","duration_seconds":23.772251,"num_turns":1,"usage":{"input_tokens":50848,"output_tokens":2596,"thinking_tokens":2211,"cache_read_tokens":56916,"total_tokens":53444}}
 
 --- stderr ---
 N/A
