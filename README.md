@@ -8,7 +8,7 @@
 
 | 阶段 | 状态 |
 |---|---|
-| P0 环境与组件验证 | **PARTIAL（进行中）** |
+| P0 环境与组件验证 | **P0_TECHNICAL_GATE = PASS**（2026-09-10；ZCode Headless = DEFERRED_PRODUCT_GAP，V1 保持 Pull） |
 | P1 协作闭环 | 未开始（禁止进入，直至 P0 Exit Criteria 全过 + GPT Gate Review） |
 
 设计基线：

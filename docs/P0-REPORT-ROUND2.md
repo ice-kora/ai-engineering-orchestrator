@@ -85,3 +85,16 @@
 ## Can Enter P1
 
 **NO**（固定，等待 GPT Final P0 Gate；技术上仅差 R1 一项人工登录 + 其后 9+1 验证）
+
+---
+
+# P0 FINAL STATUS（GPT 状态同步 · 2026-09-10）
+
+| 项 | 状态 |
+|---|---|
+| **P0_TECHNICAL_GATE** | **PASS** |
+| SECURITY-002 | **RESOLVED**（Antigravity 完成 Git 历史敏感信息清理：commits 53f81d7/0f9ca46，本地与远程历史一致） |
+| SECURITY-001 | **LEGACY_CONFIG_CLEANUP**（数据库已停用，轮换不再是 Gate；dbhub MCP 配置/DSN 引用已于 2026-09-10 清理，Agent 不再访问该连接；本机备份待用户择期删除） |
+| ZCODE_HEADLESS | **DEFERRED_PRODUCT_GAP**（接受终局：DISCOVERED/BLOCKED_BY_PRODUCT_GAP；停止猜测未文档化 provider 配置；V1 保持 ZCode Pull Executor，证据 docs/p0-evidence/zcode-headless/INVESTIGATION.md） |
+
+**下一 gate：GPT P1 Gate（未开始 P1，等待裁决）。**
