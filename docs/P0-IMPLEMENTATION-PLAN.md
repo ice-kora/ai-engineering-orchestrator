@@ -65,7 +65,7 @@
 ## 4. 计划创建的文件（本轮实际创建）
 
 `.gitignore`、`README.md`、`AGENTS.md`、`.env.example`、`pyproject.toml`、`uv.lock`
-`docs/`：P0-SPEC-DELTA-REVIEW.md、architecture_spec_v1.1.md（用户提供）、version-matrix.md、agent-mail-selection.md、INSTALLATION-PROPOSAL.md、security-findings.md、P0-IMPLEMENTATION-PLAN.md（本文）、P0-REPORT.md、p0-evidence/（security-findings.md、zcode-headless/ 全套）
+`docs/`：P0-SPEC-DELTA-REVIEW.md、architecture_spec_v1.1.md（用户提供）、version-matrix.md、agent-mail-selection.md、INSTALLATION-PROPOSAL.md、security-findings.md、P0-IMPLEMENTATION-PLAN.md（本文）、P0-REPORT.md、p0-evidence/（zcode-headless/ 全套）
 `tests/unit/test_envelope_schema.py`；`tests/integration/`：test_git_worktree.py、test_zcode_headless.py、test_beads_lifecycle.py、test_agent_mail.py、test_file_reservation_conflict.py、test_task_id_unification.py
 `scripts/`：bootstrap.ps1、healthcheck.ps1、demo.ps1；`templates/hooks/pre-commit.agent-guard`
 `sandbox/demo-repo/`（独立 git 仓库）、`sandbox/zcode-headless-scratch/`

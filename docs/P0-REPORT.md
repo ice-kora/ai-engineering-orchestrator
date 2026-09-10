@@ -90,7 +90,7 @@ Win11 23H2 (10.0.22631) · PowerShell 5.1+7.6.4 · Git 2.55.0.windows.3 · Pytho
 | Schema Gate #4 | `tests/unit/test_envelope_schema.py`（8 用例）+ uv.lock |
 | Worktree/现场保留 | `sandbox/demo-repo`（git log --grep "[bd-"、branch --list "archive/failed/*"、failure_artifacts/） |
 | ZCode headless 调查 | `docs/p0-evidence/zcode-headless/`：INVESTIGATION.md、flag-matrix-summary.txt（9 flag 接受/拒绝）、probe-blocked.txt（ModelConfigMissing 原始输出）、run1（help 全文+Unknown option）、version.txt、exit-bad-args.txt |
-| SECURITY-001 探测 | `docs/security-findings.md`（只读 <PROBE_STATEMENT> 成功=凭证有效，未打印明文） |
+| SECURITY-001 记录 | `docs/security-findings.md`（高层抽象记录；详细凭证与探测信息本地隔离） |
 | 全局配置试验还原 | INVESTIGATION.md §5（keys 恢复为 plugins/mcp，备份已删） |
 | Git 状态 | 2 commits：`1fbbf7a`（脚手架+gate4+worktree）、`cf00c9c`（delta review/选型/提案/脚本/headless 探针/安全记录），working tree clean |
 

@@ -1,36 +1,27 @@
-# 安全发现记录（公开脱敏版）
+# 安全发现记录（Security Findings）
 
-> 本文件为公开仓库版本，只保留：Finding ID / 风险类别 / 风险等级 / 是否确认 / 修复状态 / 高层修复建议。
-> 完整技术细节（位置、账号、库名、探测过程）仅存本地 `local/security/`（已 gitignore，永不推送）。
+> 本文件为公开仓库脱敏版本。详细技术细节与原始证据仅保留于本地 `local/security/`（已 gitignore，永不推送至公共仓库）。
 
-## SECURITY-001：AI 工具配置中的明文数据库凭证
+## SECURITY-001
 
-| 字段 | 内容 |
-|---|---|
-| Finding ID | SECURITY-001 |
-| 风险类别 | 凭证管理（明文凭证存储于工具配置） |
-| 风险等级 | **HIGH** |
-| 是否确认 | ✅ 已确认（2026-09-09 只读探测验证凭证有效） |
-| 修复状态 | ❌ 未修复（等待用户执行轮换；P0 不自动改密码） |
-| 高层修复建议 | ① 凭证迁出配置文件改环境变量引用；② 轮换该口令（已进入 AI 工具链路，视为暴露面扩大）；③ 为 Agent 场景创建最小权限只读账号；④ 收敛数据库网络暴露面 |
+Type:
+Plaintext credential stored in local Agent configuration.
 
-## SECURITY-002：公开 Git 历史中的基础设施信息暴露
+Severity:
+High
 
-| 字段 | 内容 |
-|---|---|
-| Finding ID | SECURITY-002 |
-| 风险类别 | 信息泄露（public repo git history） |
-| 风险等级 | **MEDIUM**（无凭证本体；泄露的是内部拓扑/账号名/口令特征等上下文信息） |
-| 是否确认 | ✅ 已确认（历史 commit 中存在早于脱敏提交的具体信息） |
-| 修复状态 | ⏸ 清理方案已备，**未执行**（历史改写需 force-push，等待人工授权） |
-| 高层修复建议 | 三选一（见下）；在此之前不再向远程新增任何敏感信息（已建立提交前扫描纪律） |
+Status:
+Confirmed
 
-### SECURITY-002 历史清理选项（供人工裁决，均未执行）
+Remediation:
+Move secrets outside repository/configuration where possible,
+rotate exposed credential,
+and use a least-privilege account.
 
-| 选项 | 操作 | 代价/风险 |
-|---|---|---|
-| O1 彻底清史 | `git filter-repo`（或 BFG）替换历史中的敏感字符串 → force-push → 协作者重克隆 | 历史改写；需授权；本仓库目前无其他协作者，代价最低的时点就是现在 |
-| O2 重建仓库 | 删除远程仓库 → 本地净化后重新 push 全量 | 同样需授权；远程 star/设置丢失（当前为空关注，几乎无损失） |
-| O3 接受残留 | 保留历史，依赖"已轮换凭证"消除实际风险 | 零操作成本；前提是 SECURITY-001 的口令已轮换且旧口令失效 |
+---
 
-> 判断参考：泄露物不含口令本体（口令从未入库），O3 + 尽快轮换即可将实际风险降为可忽略；若追求合规洁净选 O1/O2。
+## SECURITY-002
+
+Git history sanitation completed.
+Status: RESOLVED.
+Detailed evidence retained locally.
