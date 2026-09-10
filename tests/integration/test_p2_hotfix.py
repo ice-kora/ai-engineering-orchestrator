@@ -283,5 +283,10 @@ def test_fully_verified_closed_task_done(env):
     h = handover_payload("demo-repo-okok", 1, branch, head)
     plan, tid, r = _closed_with(env, handover=h, review=review_payload(h["task_id"], 1, head),
                                 merge_head=head, hold_lease=False)
+    # P2-03 SS4: task-level DONE still requires the full completion invariant
     assert r["tasks"][0]["state"] == State.DONE.value
-    assert r["plan_status"] == "DONE"
+    # ...but the PLAN no longer jumps to DONE: the final-gate lifecycle owns
+    # that (APPLIED -> READY_FOR_FINAL_GATE -> gate -> DONE). This legacy probe
+    # stores no UserRequest, so the gate is deferred and the plan stays APPLIED.
+    assert r["plan_status"] in ("APPLIED", "READY_FOR_FINAL_GATE")
+    assert r["plan_status"] != "DONE"

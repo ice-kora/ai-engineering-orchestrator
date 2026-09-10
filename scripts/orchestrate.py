@@ -69,6 +69,7 @@ def main() -> int:
                 print(f"PLAN_NOT_SAVED: {exc}")
                 print("STATUS: (nothing saved — approval unavailable, materialization forbidden)")
                 return 2
+            store.save_request(request.to_dict())   # immutable user request (P2-03)
             store.save_plan(plan, status="PLANNED")  # LAST step (failure atomicity)
             print("PLAN_CREATED")
             print(json.dumps({"planner": "codex", "plan_id": plan.plan_id, "status": "PLANNED",
@@ -90,6 +91,7 @@ def main() -> int:
                 print(f"PLAN_NOT_SAVED: {exc}")
                 print("STATUS: (nothing saved — approval unavailable, materialization forbidden)")
                 return 2
+            store.save_request(request.to_dict())   # immutable user request (P2-03)
             store.save_plan(plan, status="PLANNED")  # LAST step (failure atomicity)
             print("PLAN_CREATED")
             print(json.dumps({"planner": "gpt", "plan_id": plan.plan_id, "status": "PLANNED",
@@ -109,6 +111,7 @@ def main() -> int:
         planner = JsonPlanner(plan_doc)
         plan = planner.plan(request)
         plan.validate_dag()
+        store.save_request(request.to_dict())       # immutable user request (P2-03)
         store.save_plan(plan, status="PLANNED")
         print("PLAN_CREATED")
         print(json.dumps({"planner": "json", "plan_id": plan.plan_id, "status": "PLANNED",

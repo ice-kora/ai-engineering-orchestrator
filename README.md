@@ -12,7 +12,8 @@
 | P1 双 Agent 协作闭环 | **PASS / CLOSED**（2026-09-10；E2E 统一 ID 闭环 + Saga 补偿实证，docs/P1-REPORT.md） |
 | P2-00 Runtime Contract Hardening | **PASS / CLOSED**（2026-09-10；task-scoped release + errata 事实覆盖层） |
 | P2-01 Orchestrator Kernel | **PASS / CLOSED**（2026-09-10 GPT Final Gate；含 State-Integrity Hotfix 三项；Final Regression 69/7/1，唯一失败为 KNOWN_FLAKE_WAIVER=ACCEPTED，FLAKE-001 登记） |
-| P2-02 LLM Planner | **IN PROGRESS → 实质完成**（双后端：Responses API 版 + **Codex CLI 订阅版（用户现实通道，errata E-09）**；共享安全门；单测 18/18；**Real Smoke = SUCCESS（ChatGPT 订阅，零 API key）**——PLANNED + 审批隔离实证；等待 GPT P2-02 Final Gate） |
+| P2-02 LLM Planner | **PASS / CLOSED**（`PLANNER_BACKEND = CODEX_CLI_SUBSCRIPTION`；Responses API = optional dormant，NOT_USED；Real Smoke SUCCESS） |
+| P2-03 Decision/Arbitration Layer | **实现完成，回归收尾中**（Final Gate + Review Arbitration：request 不可变持久化、plan 终态生命周期、双 Decision 契约、grounding retry、host 复核不变量；T1-T15 全绿；双真实 Demo SUCCESS——APPROVED→DONE 与 FOLLOWUP→FINAL_FIX_REQUIRED 零自动建任务） |
 
 运行时事实覆盖层：`docs/runtime-errata-v1.1.md`（spec-vs-reality 实证清单，后续实现以此为准）。
 

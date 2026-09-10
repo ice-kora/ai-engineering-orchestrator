@@ -74,10 +74,10 @@ GPT 指令的 Provider 前提（OpenAI API + key）与用户现实（ChatGPT 订
 ## 测试
 新增 `tests/unit/test_codex_planner.py`（命令形状/read-only+ephemeral 断言、rc≠0 fail-closed、最终消息非 JSON fail-closed）：3/3；T 矩阵（后端无关共享层）15/15 保持；合计 18/18。
 
-## P2-02 终态修订
-- `P2_02_STATUS = PASS`（原 PARTIAL 的唯一缺口 Real Smoke 已由 Codex 后端补齐）
-- `OPENAI_RESPONSES_API = VERIFIED_VIA_CODEX`（订阅通道实测；Responses API 直连保留 NOT_AVAILABLE）
+## P2-02 终态（P2-03 §0 修正后的权威表述）
+- `P2_02_STATUS = PASS`；**`P2_02 = CLOSED`**
+- **`PLANNER_BACKEND = CODEX_CLI_SUBSCRIPTION`**（用户现实主路线）
+- **`CODEX_CLI_REAL_SMOKE = SUCCESS`**
+- **`OPENAI_RESPONSES_API = NOT_USED`**（更正早前 "VERIFIED_VIA_CODEX" 的错误表述：Codex CLI 订阅通道与 Responses API 是不同传输层，后者未验证也不再要求；其代码保留为 optional dormant backend）
 - `GPT_STRUCTURED_PLAN = VERIFIED`（真实模型输出通过全部本地门）
 - `PLAN_SAFETY_GATE = VERIFIED`
-- `REAL_API_SMOKE = SUCCESS`
-- `CAN_ENTER_P2_03 = NO`（按流程等 GPT P2-03 Gate；另：smoke 产出的 PLANNED plan 待人工 `orchestrate show / approve` 演练）

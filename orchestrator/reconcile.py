@@ -45,6 +45,7 @@ class NextAction(str, Enum):
     NOTIFY_PULL = "NOTIFY_PULL"                # auto: mail + human ACTION_REQUIRED
     ACTION_REQUIRED_PULL = "ACTION_REQUIRED_PULL"  # human: ZCode /pull-task <id>
     START_REVIEW = "START_REVIEW"              # auto (this step)
+    START_ARBITRATION = "START_ARBITRATION"    # auto (P2-03: iter>=3 breaker)
     ACTION_REQUIRED_IMPLEMENT = "ACTION_REQUIRED_IMPLEMENT"
     ACTION_REQUIRED_FIX = "ACTION_REQUIRED_FIX"
     ACTION_REQUIRED_CLOSE = "ACTION_REQUIRED_CLOSE"  # human: merge + close
@@ -80,11 +81,16 @@ class TaskRuntimeState:
 
 
 class Reconciler:
-    def __init__(self, store: Store, beads: BeadsAdapter, mail: AgentMailAdapter) -> None:
+    def __init__(self, store: Store, beads: BeadsAdapter, mail: AgentMailAdapter,
+                 final_gate_engine=None, arbitration_engine=None) -> None:
         self.store = store
         self.beads = beads
         self.mail = mail
         self.repo = Path(beads.repo)
+        # P2-03 semantic decision engines (deterministic facts stay in code);
+        # injectable for tests, defaults lazily to the Codex engines.
+        self.final_gate_engine = final_gate_engine
+        self.arbitration_engine = arbitration_engine
 
     # ---- live fact readers (fresh subprocess reads every call; F4) ----
 
@@ -215,8 +221,13 @@ class Reconciler:
             if handover is not None and not handover_valid:
                 state, action = State.BLOCKED, NextAction.NONE
             elif review_verdict == "CHANGES_REQUESTED":
-                state = State.ESCALATE if (review_iter or 1) >= 3 else State.FIX_REQUIRED
-                action = NextAction.ACTION_REQUIRED_FIX
+                if (review_iter or 1) >= 3:
+                    state = State.ESCALATE
+                    action = (NextAction.NONE if self.store.arbitration(task_id)
+                              else NextAction.START_ARBITRATION)
+                else:
+                    state = State.FIX_REQUIRED
+                    action = NextAction.ACTION_REQUIRED_FIX
             elif review_verdict == "APPROVED":
                 state = State.READY_TO_CLOSE
                 action = NextAction.ACTION_REQUIRED_CLOSE
@@ -257,11 +268,16 @@ class Reconciler:
 
         executed = ""
         if execute:
-            # exactly ONE auto action per call, review before notify (progress first)
+            # exactly ONE auto action per call; arbitration > review > notify
             for ptask, st in zip(plan.tasks, states):
-                if st.state == State.READY_FOR_REVIEW.value:
-                    executed = self._start_review(plan, ptask, st)
+                if st.next_action == "START_ARBITRATION":
+                    executed = self._start_arbitration(plan, ptask, st)
                     break
+            if not executed:
+                for ptask, st in zip(plan.tasks, states):
+                    if st.state == State.READY_FOR_REVIEW.value:
+                        executed = self._start_review(plan, ptask, st)
+                        break
             if not executed:
                 doc = self.store.plan_doc(plan_id) or {}
                 notified = set(doc.get("notified", []))
@@ -272,12 +288,28 @@ class Reconciler:
 
         states = [self.task_state(plan, t) for t in plan.tasks]  # re-read after action
         all_done = all(s.state == State.DONE.value for s in states)
-        if all_done and self.store.plan_status(plan_id) != "DONE":
-            self.store.set_plan_status(plan_id, "DONE")
+        status = self.store.plan_status(plan_id)
+
+        # P2-03 SS4: all tasks mechanically DONE != user request satisfied.
+        # APPLIED -> READY_FOR_FINAL_GATE is this reconcile's own transition;
+        # the NEXT reconcile may execute START_FINAL_GATE (one step at a time).
+        if all_done and status == "APPLIED":
+            if self.store.request(plan.request_id) is None:
+                executed = executed or ("READY_FOR_FINAL_GATE deferred: original "
+                                        "UserRequest not persisted")
+            else:
+                self.store.set_plan_status(plan_id, "READY_FOR_FINAL_GATE")
+                executed = executed or ("READY_FOR_FINAL_GATE (all tasks mechanically "
+                                        "DONE; final gate pending)")
+                status = "READY_FOR_FINAL_GATE"
+        elif (all_done and status == "READY_FOR_FINAL_GATE" and execute
+              and self.final_gate_engine and not executed):
+            executed = self._run_final_gate(plan_id)   # exactly one action
+            status = self.store.plan_status(plan_id)
 
         return {
             "plan_id": plan_id,
-            "plan_status": self.store.plan_status(plan_id),
+            "plan_status": status,
             "action_executed": executed,
             "tasks": [s.to_dict() for s in states],
             "read_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -294,6 +326,109 @@ class Reconciler:
         self.store._write(f"plans/{plan_id}.json", doc)
         return (f"NOTIFIED + ACTION_REQUIRED: ZCode /pull-task {st.beads_task_id} "
                 f"(mail thread {st.beads_task_id})")
+
+    # ---- P2-03: final gate + arbitration (host-executed transitions) ----
+
+    def _run_final_gate(self, plan_id: str) -> str:
+        from orchestrator.final_gate import (DecisionError, FinalGateContextBuilder,
+                                           FinalGateForbidden)
+        self.store.set_plan_status(plan_id, "FINAL_GATE_RUNNING")
+        try:
+            ctx = FinalGateContextBuilder(self.store, self.beads, self.mail).build(plan_id)
+            engine = self.final_gate_engine
+            engine = engine if not isinstance(engine, type) else engine()
+            decision = engine.decide_for_plan(ctx)
+        except FinalGateForbidden as exc:
+            self.store.set_plan_status(plan_id, "READY_FOR_FINAL_GATE")
+            return f"FINAL_GATE_FORBIDDEN: {exc}"
+        except DecisionError as exc:
+            self.store.save_final_gate(plan_id, {"error": str(exc), "category": exc.category})
+            self.store.set_plan_status(plan_id, "ESCALATED")  # fail closed -> human
+            return f"FINAL_GATE failed closed ({exc.category}) -> plan ESCALATED"
+
+        # T6 guard: the model must not invent task keys / commits. Any task_key
+        # referenced by the decision has to belong to this plan; otherwise the
+        # decision is ungrounded and is rejected outright (never acted upon).
+        known_keys = {t.task_key for t in self.store.plan(plan_id).tasks}
+        referenced = {f.get("task_key") for f in decision.get("findings", [])
+                      if f.get("task_key")}
+        unknown = referenced - known_keys
+        if unknown:
+            self.store.save_final_gate(plan_id, {"error": "ungrounded decision",
+                                                 "unknown_task_keys": sorted(unknown),
+                                                 "decision_verdict": decision["verdict"]})
+            self.store.set_plan_status(plan_id, "ESCALATED")
+            return ("FINAL_GATE decision REJECTED (invented task keys "
+                    f"{sorted(unknown)}) -> ESCALATED")
+
+        self.store.save_final_gate(plan_id, decision)
+        if decision["verdict"] == "APPROVED":
+            ok, failures = self._plan_done_invariant(plan_id)  # host re-verification
+            if not ok:
+                self.store.set_plan_status(plan_id, "ESCALATED")
+                return ("FINAL_GATE APPROVED but host invariant failed: "
+                        + "; ".join(failures) + " -> ESCALATED")
+            self.store.set_plan_status(plan_id, "DONE")
+            return "FINAL_GATE APPROVED + host invariant OK -> DONE"
+        if decision["verdict"] == "FOLLOWUP_REQUIRED":
+            self.store.set_plan_status(plan_id, "FINAL_FIX_REQUIRED")
+            return ("FINAL_GATE FOLLOWUP_REQUIRED -> FINAL_FIX_REQUIRED | "
+                    "ACTION_REQUIRED: REPLAN (no auto task creation)")
+        self.store.set_plan_status(plan_id, "ESCALATED")
+        return "FINAL_GATE ESCALATE_HUMAN -> ESCALATED"
+
+    def _plan_done_invariant(self, plan_id: str) -> tuple[bool, list[str]]:
+        plan = self.store.plan(plan_id)
+        failures: list[str] = []
+        for ptask in plan.tasks:
+            st = self.task_state(plan, ptask)
+            if st.state != State.DONE.value:
+                failures.append(f"{ptask.task_key}: state={st.state}")
+            if st.reservation_held:
+                failures.append(f"{ptask.task_key}: reservation still held")
+            if st.review_verdict != "APPROVED":
+                failures.append(f"{ptask.task_key}: effective review not APPROVED")
+            if not st.merged_to_main:
+                failures.append(f"{ptask.task_key}: verified head not merged")
+        return (not failures), failures
+
+    def _start_arbitration(self, plan: contracts.ExecutionPlan, ptask,
+                           st: TaskRuntimeState) -> str:
+        from orchestrator.final_gate import DecisionError
+        task_id = st.beads_task_id
+        handover = self.store.handover(task_id) or {}
+        review = self.store.review(task_id) or {}
+        iterations = review.get("iteration") or 3
+        reviews_ctx = [{"iteration": it, "verdict": "CHANGES_REQUESTED",
+                        "note": "per-iteration reports were not persisted in P1; "
+                                "latest effective review is authoritative"}
+                       for it in range(1, iterations + 1)]
+        ctx = {
+            "task_key": ptask.task_key,
+            "acceptance_criteria": ptask.acceptance_criteria,
+            "review_iterations": iterations,
+            "reviews": reviews_ctx,
+            "latest_effective_review": {k: v for k, v in review.items()
+                                        if not str(k).startswith("_")},
+            "handover_summary": handover.get("deliverable_summary", ""),
+            "test_evidence": handover.get("test_evidence", {}),
+            "verified_head_commit": review.get("verified_head_commit"),
+        }
+        try:
+            engine = self.arbitration_engine
+            engine = engine if not isinstance(engine, type) else engine()
+            decision = engine.decide_for_task(ctx)
+        except DecisionError as exc:
+            self.store.save_arbitration(task_id, {"error": str(exc), "category": exc.category})
+            return f"ARBITRATION failed closed ({exc.category}); task stays ESCALATED"
+        self.store.save_arbitration(task_id, decision)
+        verdict = decision["verdict"]
+        if verdict == "ACCEPT_RISK_RECOMMENDATION":
+            return ("ARBITRATION ACCEPT_RISK_RECOMMENDATION recorded (recommendation ONLY; "
+                    "task NOT closed - human waiver required)")
+        if verdict == "REPLAN_REQUIRED":
+            return "ARBITRATION REPLAN_REQUIRED | ACTION_REQUIRED: REPLAN (no auto task creation)"
+        return "ARBITRATION HUMAN_DECISION_REQUIRED | ACTION_REQUIRED: human decision"
 
     def _start_review(self, plan: contracts.ExecutionPlan, ptask, st: TaskRuntimeState) -> str:
         from adapters.review_flow import review_iteration  # local import: agy dependency
