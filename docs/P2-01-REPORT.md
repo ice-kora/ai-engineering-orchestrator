@@ -89,3 +89,12 @@ review 属于当前 handover 当且仅当 `task_id`、`iteration`、`verified_he
 单次完整 `pytest tests` 真实结果：**69 passed / 7 skipped / 1 failed**（耗时 734s）。
 唯一失败 `test_forensic_retention_dry_run`：失败后立即单套件复跑 **2/2 全过**（flake 确认），属 docs/runtime-errata-v1.1.md E-06/E-07 已文档化间歇类（agy 子进程/Windows 文件锁时序），与本次热修生产逻辑无关（热修仅触及 orchestrator/materialize.py 与 orchestrator/reconcile.py）。
 按 GPT 指令，本次以真实运行结果为准，未做"等效终态"推导，REGRESSION 不更新为绿。
+
+
+---
+
+# P2-01 Final Gate 裁决（2026-09-10）
+
+- `P2_01_FINAL_GATE = PASS`；`KNOWN_FLAKE_WAIVER = ACCEPTED`；`P2_01 = CLOSED`；`P2_02_ENTRY = APPROVED`。
+- **Final Regression 维持真实结果不变：69 passed / 7 skipped / 1 failed**（唯一失败 `test_forensic_retention_dry_run` 经单套件复跑 2/2 确认为 E-06/E-07 间歇类；豁免已裁决，结果不改写为 0 failed）。
+- FLAKE-001 已登记至 `docs/flake-registry.md`（后续治理，不阻塞 P2-02）。

@@ -61,6 +61,6 @@ Beads 只存粗粒度（`open` / `in_progress` / `blocked` / `closed`）；细�
 
 ## 10. 阶段纪律（更新于 2026-09-10）
 
-- 当前阶段状态：P0 = PASS/CLOSED；P1 = PASS/CLOSED；**P2 = WAITING/PRECHECK**（P2-00 Runtime Contract Hardening 完成后停在 P2-01 之前，等待 GPT 正式放行）。
+- 当前阶段状态（2026-09-10 更新）：P0/P1 = PASS/CLOSED；P2-00 = PASS/CLOSED；**P2-01 = PASS/CLOSED**（Final Gate PASS，KNOWN_FLAKE_WAIVER=ACCEPTED）；**P2-02 = APPROVED/WAITING 指令**（LLM Planner 接入；涉及真实 API 调用与密钥配置，须按 GPT 详细指令执行）。
 - 规范与运行时冲突时以 `docs/runtime-errata-v1.1.md` 为事实覆盖层（推翻需新证据 + GPT 裁决）。
 - 所有验证结论必须附证据（实际命令 + 输出摘要 + 文件路径），存 `docs/p0-evidence/`、`docs/p1-evidence/`。
