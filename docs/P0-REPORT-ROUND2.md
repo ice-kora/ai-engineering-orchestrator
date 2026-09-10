@@ -40,11 +40,11 @@
 
 ## ZCode Headless Result
 
-**BLOCKED（等待用户一次 `zcode login`）**。已完成的解析级实证：flag 矩阵（接受 `--prompt/-p/--json/--cwd/--mode/--disallowed-tools`；拒绝 `--max-turns/--allowed-tools/--settings`——help/解析器漂移）；无效参数非零退出 ✓。`Model config is missing` 阻断持续（`model.main` 配置试验无效已还原）。解锁路径：终端执行 `node D:\Software\zcode\install\ZCode\resources\glm\zcode.cjs login` 完成浏览器授权后重跑 `pytest tests/integration/test_zcode_headless.py`。
+**DISCOVERED（BLOCKED — 产品级缺口，终局 2026-09-10）**。用户已完成 `zcode login`，但全部内置 provider 授权状态为 `oauth_provider_inactive` / `coding_plan_not_entitled`（coding-plan-cache 实证）；config 形态矩阵 6 种全部实测（字符串 `model.main` 可通过模型检查，但 provider baseURL 无任何配置载体；catalog 在独立运行时不加载；桌面端为进程内注入、无可镜像接口）。详见 `docs/p0-evidence/zcode-headless/INVESTIGATION.md` 终局补充。解锁三选项：① 官方支持/文档化（推荐）② 桌面设置探测 ③ 接受 Pull 模式现状（P0 Exit 不依赖此项，v1.0 基线本为 Pull）。已完成的解析级实证：flag 矩阵（接受 `--prompt/-p/--json/--cwd/--mode/--disallowed-tools`；拒绝 `--max-turns/--allowed-tools/--settings`——help/解析器漂移）；无效参数非零退出 ✓。`Model config is missing` 阻断持续（`model.main` 配置试验无效已还原）。解锁路径：终端执行 `node D:\Software\zcode\install\ZCode\resources\glm\zcode.cjs login` 完成浏览器授权后重跑 `pytest tests/integration/test_zcode_headless.py`。
 
 ## ZCode Concurrent Isolation Result
 
-**PENDING**（依赖上一项解锁；测试代码已就绪：双进程不同 cwd/worktree、标记隔离、session id 比对、kill 一方不影响另一方）。
+**NOT RUNNABLE**（依赖 headless 解锁；测试代码就绪：双进程不同 cwd/worktree、标记隔离、session id 比对、kill 一方不影响另一方）。
 
 ## Antigravity Headless Result
 
@@ -66,7 +66,7 @@
 
 | # | Blocker | 解法 |
 |---|---|---|
-| R1 | ZCode headless 模型配置（未文档化） | **用户执行一次 `zcode login`**（浏览器授权）→ 重跑 headless 套件（9+1 项） |
+| R1 | ZCode headless 产品级缺口（login 已做、授权未激活、配置无载体） | 三选项见 ZCode Headless Result；**P0 Exit 不依赖此项** |
 | R2 | SECURITY-001 凭证轮换（用户执行） | 见 docs/security-findings.md（本地细节在 local/security/） |
 | R3 | SECURITY-002 历史清理（O1 filter-repo / O2 重建 / O3 接受残留+轮换） | 等人工裁决；本轮已做到"增量零新增"（写入时脱敏根修） |
 | R4 | A5（ZCode MCP 接入 agent-mail） | GPT 明示暂缓；且需先验证 ZCode MCP 客户端 era 兼容 |

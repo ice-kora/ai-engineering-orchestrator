@@ -125,9 +125,11 @@ def headless_ready(scratch_dirs):
         archive("probe-blocked", argv, proc,
                 extra="BLOCKED: model provider wiring missing; see module docstring")
         pytest.skip(
-            "BLOCKED_MODEL_CONFIG: headless CLI requires an explicit model provider "
-            "config/credentials (undocumented). Unblock candidates: `zcode login` "
-            "(Z.AI OAuth) or provider credentials in config.json; escalated to GPT. "
+            "BLOCKED_PRODUCT_GAP: standalone headless CLI cannot obtain a working "
+            "provider on this install — `zcode login` done 2026-09-10 but ALL builtin "
+            "providers report oauth_provider_inactive / coding_plan_not_entitled, and "
+            "no config carrier for provider baseURL exists (see INVESTIGATION.md). "
+            "Unlock = official ZCode support/docs; not solvable by guessing. "
             f"Raw evidence: {EVIDENCE_DIR / 'probe-blocked.txt'}"
         )
     archive("probe-failed", argv, proc, extra="unexpected failure mode")

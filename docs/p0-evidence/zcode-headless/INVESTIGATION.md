@@ -42,3 +42,34 @@
 - `probe-blocked.txt`（Model config is missing 原始输出）
 - `flag-matrix-summary.txt`（9 个 flag 的接受/拒绝矩阵）
 - `version.txt`、`exit-bad-args.txt`
+
+---
+
+# 终局补充（2026-09-10 · login 之后）
+
+## 新事实
+
+1. **用户已完成 `zcode login`**（OAuth 凭据落盘 `~/.zcode/v2/credentials.json` ✓），但 headless 报错一字未变。
+2. **授权状态核验**（`~/.zcode/v2/coding-plan-cache.json`）：全部内置 provider 不可用——`builtin:zai*` / `builtin:bigmodel*` 均为 `oauth_provider_inactive` 或 `coding_plan_not_entitled`。**当前账号没有任何 headless 可用的内置 provider 授权**（桌面端工作靠的是进程内注入的自定义 provider 配置，本机 localhost:3000 网关）。
+3. **config 形态矩阵**（cli/config.json，全部实测）：
+   | 形态 | 结果 |
+   |---|---|
+   | `model.main = {providerId, modelId}` 对象 | Model config is missing（对象被拒） |
+   | `model.main = "zai/glm-5.3"` 字符串 | **通过模型检查** → 进到 "provider zai is missing baseURL" |
+   | 顶层 `providers.{id}.{baseURL,kind}` | 未被读取（同 baseURL 错） |
+   | `modelProviderOptions.{id}.{baseURL,apiKey,kind}` | 未被读取（同 baseURL 错） |
+   | `model.available` 携带 provider 定义对象 | 破坏校验，退回 missing |
+4. **catalog 不加载**：resources/model-providers/*.json（含 zai/bigmodel 定义）在独立 CLI 运行时未被读取（baseURL 无来源）。
+5. **桌面无子进程**：桌面 agent runtime 进程内运行并直接注入 modelConfig，无可镜像的命令行/环境。
+
+## 定论
+
+**ZCODE_HEADLESS = DISCOVERED（BLOCKED — 产品级缺口）**：0.16.5 的独立 headless CLI 在本安装上无法通过任何公开/可经验发现的配置获得可用 provider——登录授权未激活任何内置 provider，且 provider 定义的 baseURL 在 config 中无已知载体。桌面端与 CLI 属两套配置面（v2 进程内 vs legacy cli/config.json），官方未文档化桥接。
+
+## 解锁路径（供 GPT/用户裁决，按推荐序）
+
+1. **官方支持**：向 Z.ai/ZCode 提交 headless CLI 配置咨询（或等官方文档化 headless 与 config schema）——唯一不逆行的正道。
+2. **桌面设置探测**（用户 1 分钟动作）：桌面 Settings 里若有"CLI / 启用 provider"类开关，开启后观察 cli/config.json 是否被写入正确形态。
+3. **接受现状**：V1 架构本就是 ZCode Pull 模式（v1.0 基线），headless 属增值探索；P0 Exit 并不依赖它。建议按原架构继续，headless 议题挂起待官方就绪。
+
+（本轮所有全局配置试验已还原：cli/config.json keys = plugins+mcp；项目级 .zcode/config.json 已删除；零残留。）
