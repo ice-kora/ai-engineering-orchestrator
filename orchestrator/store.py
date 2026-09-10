@@ -29,7 +29,7 @@ class Store:
     def __init__(self, root: Path) -> None:
         self.root = Path(root)
         for sub in ("plans", "approvals", "mapping", "handovers", "reviews",
-                    "requests", "final_gates", "arbitrations"):
+                    "requests", "final_gates", "arbitrations", "review_history"):
             (self.root / sub).mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
 
@@ -144,8 +144,42 @@ class Store:
     def handover(self, beads_task_id: str) -> dict | None:
         return self._read(f"handovers/{beads_task_id}.json")
 
+    class ReviewHistoryConflict(StoreError):
+        """Same task_id+iteration persisted with DIFFERENT content."""
+
     def save_review(self, beads_task_id: str, payload: dict) -> None:
+        """Latest-review entry (compat) + append-only immutable history.
+
+        History rule: same task_id+iteration with identical content is
+        idempotent; different content raises ReviewHistoryConflict — history
+        is never silently overwritten (P2-03 hotfix Fix-2).
+        """
+        iteration = payload.get("iteration")
+        if isinstance(iteration, int) and iteration >= 1:
+            hist_path = f"review_history/{beads_task_id}/{iteration}.json"
+            existing = self._read(hist_path)
+            if existing is not None and existing != payload:
+                raise self.ReviewHistoryConflict(
+                    f"review history {beads_task_id}#{iteration} already exists "
+                    "with different content; BLOCKED (no silent overwrite)")
+            if existing is None:
+                (self.root / "review_history" / beads_task_id).mkdir(
+                    parents=True, exist_ok=True)
+                self._write(hist_path, payload)
         self._write(f"reviews/{beads_task_id}.json", payload)
 
     def review(self, beads_task_id: str) -> dict | None:
         return self._read(f"reviews/{beads_task_id}.json")
+
+    def review_history(self, beads_task_id: str) -> dict[int, dict]:
+        """All persisted iterations: {iteration: payload}."""
+        folder = self.root / "review_history" / beads_task_id
+        if not folder.exists():
+            return {}
+        out: dict[int, dict] = {}
+        for f in sorted(folder.glob("*.json")):
+            try:
+                out[int(f.stem)] = json.loads(f.read_text(encoding="utf-8"))
+            except (ValueError, OSError):
+                continue
+        return out

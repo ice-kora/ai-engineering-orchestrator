@@ -66,10 +66,21 @@ class FinalGateContextBuilder:
                     f"{ptask.task_key}: handover schema-invalid", category="final_gate_forbidden")
             if review is None:
                 raise FinalGateForbidden(f"{ptask.task_key}: no review", category="final_gate_forbidden")
+            # P2-03 hotfix Fix-3: independent FULL validation before the review
+            # may enter the context — schema first, then freshness, then verdict.
+            from adapters import handover as _hm
+            if _hm.validate_payload(review, "review"):
+                raise FinalGateForbidden(
+                    f"{ptask.task_key}: review schema-invalid", category="final_gate_forbidden")
             head = handover["git_context"]["head_commit"]
+            verified = review.get("verified_head_commit") or ""
+            if not (isinstance(verified, str) and len(verified) >= 7):
+                raise FinalGateForbidden(
+                    f"{ptask.task_key}: verified_head_commit empty/too short",
+                    category="final_gate_forbidden")
             if not (review.get("task_id") == task_id
                     and review.get("iteration") == handover.get("iteration")
-                    and head.startswith(review.get("verified_head_commit", ""))):
+                    and (verified == head or head.startswith(verified))):
                 raise FinalGateForbidden(
                     f"{ptask.task_key}: review not fresh for current handover",
                     category="final_gate_forbidden")

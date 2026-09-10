@@ -399,10 +399,27 @@ class Reconciler:
         handover = self.store.handover(task_id) or {}
         review = self.store.review(task_id) or {}
         iterations = review.get("iteration") or 3
-        reviews_ctx = [{"iteration": it, "verdict": "CHANGES_REQUESTED",
-                        "note": "per-iteration reports were not persisted in P1; "
-                                "latest effective review is authoritative"}
-                       for it in range(1, iterations + 1)]
+        # P2-03 hotfix Fix-2: arbitration consumes the REAL append-only history.
+        # A claimed iteration>=3 without complete, valid 1..N history is
+        # FORBIDDEN — Codex is not called and no data is faked.
+        history = self.store.review_history(task_id)
+        reviews_ctx = []
+        for it in range(1, iterations + 1):
+            item = history.get(it)
+            if item is None:
+                self.store.save_arbitration(task_id, {
+                    "error": f"review history incomplete: iteration {it} missing",
+                    "category": "arbitration_forbidden"})
+                return (f"ARBITRATION_FORBIDDEN: review history incomplete "
+                        f"(iteration {it} missing); task stays ESCALATED")
+            if item.get("verdict") != "CHANGES_REQUESTED":
+                self.store.save_arbitration(task_id, {
+                    "error": f"history iteration {it} verdict={item.get('verdict')}",
+                    "category": "arbitration_forbidden"})
+                return (f"ARBITRATION_FORBIDDEN: history iteration {it} is not "
+                        f"CHANGES_REQUESTED; task stays ESCALATED")
+            reviews_ctx.append({k: v for k, v in item.items()
+                                if not str(k).startswith("_")})
         ctx = {
             "task_key": ptask.task_key,
             "acceptance_criteria": ptask.acceptance_criteria,

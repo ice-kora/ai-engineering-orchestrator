@@ -330,14 +330,35 @@ def test_t10_request_conflict_blocked(env):
 # ---------- T11/T12: arbitration ----------
 
 def _escalated_task_env(env):
+    """Three DISTINCT, really-persisted CHANGES_REQUESTED reviews (T11 hotfix).
+
+    Review #1/#2/#3 carry different findings and land in review_history/<tid>/
+    {1,2,3}.json via the append-only store; #3 is fresh vs the iteration-3
+    handover so the reconcile computes ESCALATE + START_ARBITRATION.
+    """
     store, beads, mail, gate, *_ = env
     plan = make_plan(store)
     gate.approve(plan.plan_id, "human")
     Materializer(store, beads, gate).apply(plan)
     tid = complete_task(env, plan, verdict="CHANGES_REQUESTED", iteration=3, close=False)
-    review = store.review(tid)
-    review["iteration"] = 3
-    store.save_review(tid, review)
+    review = store.review(tid)          # #3 already persisted (append-only);
+    review["iteration"] = 3             # never mutate its content after save
+    for it, desc in ((1, "first-pass finding: core logic wrong"),
+                     (2, "second-pass finding: fix incomplete")):
+        store.save_review(tid, {"schema_version": "1.1.0", "task_id": tid,
+                                "iteration": it, "reviewer": "agent-antigravity",
+                                "verdict": "CHANGES_REQUESTED",
+                                "verified_head_commit": review["verified_head_commit"],
+                                "findings": [{"severity": "MAJOR",
+                                              "file_path": "src/x.py",
+                                              "issue_type": "LOGIC_BUG",
+                                              "description": desc,
+                                              "actionable_fix": "fix"}]})
+    store.save_review(tid, review)   # restore fresh iteration-3 as latest
+    history = store.review_history(tid)
+    assert sorted(history) == [1, 2, 3]
+    descs = {history[i]["findings"][0]["description"] for i in (1, 2, 3)}
+    assert len(descs) == 3              # three DISTINCT real payloads
     # task stays in_progress with 3x CHANGES_REQUESTED -> ESCALATE state
     return plan, tid
 
@@ -351,6 +372,10 @@ def test_t11_three_reviews_trigger_arbitration(env):
     recon = Reconciler(store, beads, mail, arbitration_engine=arb)
     r = recon.reconcile_plan(plan.plan_id)
     assert arb.calls, "arbitration engine was not invoked"
+    reviews = arb.calls[0]["reviews"]
+    assert [rev["iteration"] for rev in reviews] == [1, 2, 3]
+    assert all(rev["verdict"] == "CHANGES_REQUESTED" for rev in reviews)
+    assert len({rev["findings"][0]["description"] for rev in reviews}) == 3
     stored = store.arbitration(tid)
     assert stored["verdict"] == "HUMAN_DECISION_REQUIRED"
     assert "ACTION_REQUIRED: human decision" in r["action_executed"]

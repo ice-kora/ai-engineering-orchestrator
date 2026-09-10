@@ -144,7 +144,15 @@ def main() -> int:
         plan = store.plan(args.plan_id)
         beads = BeadsAdapter(_repo_path(plan.target_repo))
         mail = AgentMailAdapter(_repo_path(plan.target_repo))
-        result = Reconciler(store, beads, mail).reconcile_plan(
+        engines = {}
+        if args.cmd == "reconcile" and not args.dry_run:
+            # composition root: real decision engines wired ONLY for the
+            # executing reconcile path — status/--dry-run never invoke Codex
+            from orchestrator.final_gate import (CodexArbitrationEngine,
+                                                 CodexFinalGateEngine)
+            engines = {"final_gate_engine": CodexFinalGateEngine(),
+                       "arbitration_engine": CodexArbitrationEngine()}
+        result = Reconciler(store, beads, mail, **engines).reconcile_plan(
             args.plan_id, execute=(args.cmd == "reconcile" and not args.dry_run))
         print(json.dumps(result, ensure_ascii=False, indent=1))
         return 0

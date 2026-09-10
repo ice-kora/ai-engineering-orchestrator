@@ -69,3 +69,25 @@ Reconciler 的全部事实判断（Beads status/dependency/lease/handover validi
 ## 非目标遵守
 
 未实现：自动 replan/后续任务创建/自动修码/自动风险豁免/daemon/scheduler/Web·Board UI/Model Router/API provider/RAG/vector DB/大并发/生产接入/部署。
+
+---
+
+# P2-03 Hotfix 附录 — Product Wiring + Review History Integrity（2026-09-10）
+
+> GPT `P2_03_FINAL_GATE = HOLD_FOR_HOTFIX` 三项修复；零 P2-04 功能。
+
+## Fix-1 CLI 接入决策引擎
+`scripts/orchestrate.py` reconcile 分支显式组装 `Reconciler(..., final_gate_engine=CodexFinalGateEngine(), arbitration_engine=CodexArbitrationEngine())`（composition root，不在 Reconciler 内隐藏创建）；**status 与 --dry-run 永不构造引擎**（引擎仅在执行路径 import）。测试：`test_cli_reconcile_wires_final_gate` / `test_cli_reconcile_wires_arbitration` / `test_status_does_not_invoke_codex`（引擎构造被 spy 拦截断言零次）全过。
+
+## Fix-2 真实 Review History
+`Store.save_review` 现为双写：latest 入口（`reviews/<id>.json`，P1/P2-01 兼容）+ **append-only 不可覆盖历史**（`review_history/<id>/<iteration>.json`）；同 iteration 同内容幂等、异内容 `ReviewHistoryConflict` 阻塞。`Store.review_history(id) -> {iteration: payload}`。**ArbitrationContext 只消费真实历史**：声称 iter≥3 而历史 1..N 不完整或非 CHANGES_REQUESTED ⇒ `ARBITRATION_FORBIDDEN`（不调 Codex、不伪造）。T11 升级为三份**不同**、真实持久化的 payload（断言 spy 收到的 reviews 恰为 [1,2,3] 且 findings 互异）。测试 `test_review_history_append_only` + `test_arbitration_uses_real_history_and_forbids_incomplete` 全过。
+
+## Fix-3 FinalGateContext 独立完整 Review 校验
+入 context 前依次：`validate_payload(review, "review")` 全 schema（违规 ⇒ FORBIDDEN，Codex 不调）→ `verified_head_commit` 非空且 ≥7 → task_id/iteration/**head ==/prefix** 三重 freshness（对称匹配，废弃单侧 `head.startswith`）→ verdict==APPROVED。测试：`test_invalid_review_schema_final_gate_forbidden` / `test_empty_verified_head_final_gate_forbidden`（空值被 schema 门与长度门双层拦截）/ `test_valid_short_verified_head_accepted`（7 位前缀合法接受）全过。
+
+## 验证汇总
+- **TARGETED_REGRESSION = 39 passed / 0 failed**（P2-03 T 矩阵 15 + hotfix 8 + P2-01 hotfix/orchestrator 16；无全量重跑按指令）
+- **REAL_CLI_FINAL_GATE_SMOKE = SUCCESS**：`orchestrate reconcile` 两连调（composition 路径）→ READY_FOR_FINAL_GATE → **真实 Codex Final Gate 31.9s** → 四项需求全 SATISFIED → host 不变量 → **Plan DONE**（plan-clismoke-d3e5d3）。另一次中途运行得到 FOLLOWUP_REQUIRED（UNCERTAIN：smoke 证据描述不全）——语义门正确行为的实证，非缺陷。
+- 过程实证：历史不可变性两次拦截测试自身的覆写尝试（正是 Fix-2 的目标行为）。
+
+## P2_03_HOTFIX = **PASS** | P2_03_READY_FOR_FINAL_GATE = **YES**
