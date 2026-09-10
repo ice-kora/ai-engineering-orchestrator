@@ -65,6 +65,33 @@ class PullFlow:
 
     # ---- P1-01 + P1-02 ----
 
+    def _release_partial_grants(self, task_id: str, result: ReservationResult,
+                                paths: list[str]) -> list[str]:
+        """Release ONLY the reservations granted by THIS reserve call.
+
+        Empirical basis (P2-00 hotfix probe): a multi-path reserve with one
+        conflicting path GRANTS the free paths (granted + conflicts coexist,
+        exit 0). Releasing agent-wide here would destroy the same agent's
+        OTHER task leases — forbidden. Resolution order:
+          1. reservation ids from result.granted  -> release_reservations(ids)
+          2. no reliable ids -> release_for_task(reason=task_id)
+          3. last resort     -> release_for_task(paths=paths)
+        release_all() is never used in task flow.
+        """
+        evidence: list[str] = []
+        if not result.granted:
+            return evidence
+        ids = [str(g["id"]) for g in result.granted if g.get("id")]
+        if ids:
+            released = self.mail.release_reservations(self.agent_role, ids)
+            evidence.append(f"am release --ids {ids} (partial grants of THIS acquire; released={released})")
+        elif self.mail.release_for_task(self.agent_role, task_id)["released"]:
+            evidence.append(f"am release_for_task(reason={task_id}) (ids unavailable)")
+        else:
+            out = self.mail.release_for_task(self.agent_role, task_id, paths=paths)
+            evidence.append(f"am release_for_task(paths={paths}) fallback ({out})")
+        return evidence
+
     def pull_task(self, task_id: str | None = None) -> ExecutionPlan:
         # 1) ready queue
         ready = self.beads.ready()
@@ -99,10 +126,7 @@ class PullFlow:
                    f"granted={len(result.granted)} conflicts={len(result.conflicts)}")
         if not result.success:
             evidence = list(self.evidence)
-            # release partial grants of THIS acquire
-            if result.granted:
-                self.mail.release_all(self.agent_role)
-                evidence.append("am file_reservations release (partial grants of this acquire)")
+            evidence.extend(self._release_partial_grants(task.id, result, paths))
             # Beads compensation (CLI-only, v1.1 §8.3)
             comp = self.beads.compensate_claim(task.id, self.actor,
                                                stage_labels=("stage:CLAIMED",))

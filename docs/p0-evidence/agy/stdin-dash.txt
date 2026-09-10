@@ -1,7 +1,7 @@
 $ -p - stdin=Reply...
 exit=0
 --- stdout ---
-{"conversation_id":"e5e8d7f0-87ac-45eb-91f8-bd9affd2a01c","status":"SUCCESS","response":"系统副驾已就绪。\n\n请提供当前需要处理的架构设计、链路优化、重构任务或具体工程问题。随时可开始。\n","duration_seconds":2.6987217,"num_turns":1,"usage":{"input_tokens":8052,"output_tokens":318,"thinking_tokens":286,"cache_read_tokens":8139,"total_tokens":8370}}
+{"conversation_id":"5a7cc97e-3ddc-4015-9024-c90fe8d35a07","status":"SUCCESS","response":"副驾已就位。请同步当前的核心架构诉求、排查痛点或具体工程任务。\n","duration_seconds":2.8714115,"num_turns":1,"usage":{"input_tokens":16196,"output_tokens":289,"thinking_tokens":266,"cache_read_tokens":0,"total_tokens":16485}}
 
 --- stderr ---
 N/A

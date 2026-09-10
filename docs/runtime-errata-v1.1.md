@@ -7,7 +7,7 @@
 |---|---|---|---|---|
 | E-01 | Beads Task ID 格式 | `^bd-[0-9a-z]{6,10}$`（v1.1 §5 字面） | bd 1.2.2 生成 `<repo-prefix>-<rand4>`（如 `demo-repo-ujn`）；前缀可 `bd rename-prefix` 定制 | 所有 schema 正则与文档改用 `[a-z0-9][a-z0-9-]*-[a-z0-9]{3,8}`（`adapters/handover.py` 已生效）；branch 正则随动 |
 | E-02 | Agent Mail 身份名 | "注册 zcode-agent / antigravity-agent"（v1.0 §六.B） | v0.3.35 强制自动生成"形容词+名词"名，描述性名（含 QuickSilver）被拒 | 角色经 program/model 字段表达；身份持久化于 sandbox identity store（`adapters/agent_mail.py`） |
-| E-03 | 预约冲突信号 | 冲突 ⇒ 操作失败（隐含非零退出码） | 冲突时返回 `{granted:[], conflicts:[…]}` 且 **exit code 仍为 0** | Adapter 一律解析 JSON 判定成功（`ReservationResult.success`）；禁止信任 exit code（已固化+测试） |
+| E-03 | 预约冲突信号 | 冲突 ⇒ 操作失败（隐含非零退出码） | 冲突时 **exit code 仍为 0**；且**多路径部分冲突会产生 partial grants**（granted 与 conflicts 并存，2026-09-10 实证 id=70 案例）——“整体失败”是 workflow 层规则，不是平台行为 | Adapter 一律解析 JSON 判定成功（`ReservationResult.success`）；补偿分支仅释放**本次** granted ids（`release_reservations`），严禁 agent 级全量释放（P2-00 hotfix + `test_partial_grant_compensation.py`） |
 | E-04 | force-release | v1.1 §4.2 契约含 force_release_reservation | am CLI v0.3.35 **无** force-release 子命令（MCP-only） | 释放兜底 = TTL 自然到期（P0 实测 60s TTL ~65s 释放）；两阶段自愈以"等过期"为实际路径 |
 | E-05 | MCP 接入 | Agent Mail 以 MCP server 方式接入各 Agent | stdio 端自定义握手：python SDK 与裸 JSON-RPC（5 个协议版本串）全部在 initialize 被拒；无兼容旋钮 | `ZCODE_AGENT_MAIL_MCP = FALLBACK_CLI`：全部通信走 am CLI Adapter；MCP 兼容研究挂起（不猜协议/不改服务端） |
 | E-06 | agy worktree git 感知 | headless 可在 worktree 内正常工作 | `git rev-parse --show-toplevel` 经 agy 间歇性错误（返回父仓库 / 报非仓库 / 偶尔正确）；antigravity-cli#68 多形态 | Adapter 纪律：绝对路径 cwd + 事后验证文件落点；绝不信任 agy 自报 git root |

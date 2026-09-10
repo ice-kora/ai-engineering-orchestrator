@@ -110,9 +110,31 @@ class AgentMailAdapter:
         return result
 
     def release_all(self, agent_role: str) -> int:
+        """DANGEROUS / ADMIN ONLY / NOT FOR TASK FLOW.
+
+        Releases EVERY reservation the agent holds — including leases belonging
+        to the agent's OTHER tasks. Task flows must use release_for_task() /
+        release_reservations(); this stays only as an admin/test-cleanup helper
+        (P2-00 hotfix: agent-wide release is a sibling-task foot-gun).
+        """
         proc = self._am("file_reservations", "release", self.project_key, self.agent(agent_role))
         m = "Released"
         return 1 if m in proc.stdout else 0
+
+    def release_reservations(self, agent_role: str, ids: list[str]) -> int:
+        """Release EXACTLY the given reservation ids (one-by-one: multi-id value
+        format undocumented). Returns count released; raises on CLI failure."""
+        agent = self.agent(agent_role)
+        released = 0
+        for rid in ids:
+            proc = self._am("file_reservations", "release",
+                            self.project_key, agent, "--ids", str(rid), check=False)
+            if proc.returncode == 0 and "Released" in proc.stdout:
+                released += 1
+            else:
+                raise AgentMailError(
+                    f"release --ids {rid} failed rc={proc.returncode}: {proc.stderr[:200]}")
+        return released
 
     # ---- task-scoped release (P2-00 hardening) ----
     # CLI facts (verified 2026-09-10): `file_reservations list <PROJECT>` prints a
