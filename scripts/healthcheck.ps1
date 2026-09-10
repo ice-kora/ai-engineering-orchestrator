@@ -57,13 +57,14 @@ Check 'demo-repo' $wtOk ($(if ($wtOk) { (git -C $demoWt branch --show-current) }
 $shared = 'D:\Software\ai-orchestrator\shared-cache'
 Check 'shared-cache-dir' (Test-Path $shared) "$(if (Test-Path $shared) {'exists'} else {'not created yet (proposal only, P1)'}) @ $shared" -Optional
 
-# --- Pre-P0 Gate checklist 摘要 ---
-Write-Host "`n--- Pre-P0 Gate (v1.1 §10) ---"
-Write-Host "  #1 spec absorbed      : OK  (docs/P0-SPEC-DELTA-REVIEW.md = PASS)"
-Write-Host "  #2 component interface: BLOCKED (bd/agent-mail not installed)"
-Write-Host "  #3 shared cache paths : PROPOSED (docs/INSTALLATION-PROPOSAL.md §4)"
-Write-Host "  #4 schema validator   : OK    (pytest tests/unit 8/8)"
+# --- Pre-P0 Gate checklist 摘要（P0 终态，2026-09-10）---
+Write-Host "`n--- Pre-P0 Gate (v1.1 §10) — FINAL ---"
+Write-Host "  #1 spec absorbed      : OK      (docs/P0-SPEC-DELTA-REVIEW.md = PASS)"
+Write-Host "  #2 component interface: VERIFIED (bd v1.2.2 + agent-mail v0.3.35 real-tested; see docs/P0-REPORT-ROUND2.md)"
+Write-Host "  #3 shared cache paths : PROPOSED (docs/INSTALLATION-PROPOSAL.md §4; activates with first JS/Java target repo in P1+)"
+Write-Host "  #4 schema validator   : OK      (pytest tests/unit 8/8)"
 Write-Host "  #5 pre-commit guard   : TEMPLATE READY (templates/hooks/)"
+Write-Host "  P0_TECHNICAL_GATE = PASS | ZCODE_HEADLESS = DEFERRED_PRODUCT_GAP | awaiting GPT P1 Gate"
 
 Write-Host "`nResult: $($script:FailCount) missing/blocking item(s)." -ForegroundColor $(if ($script:FailCount -gt 0) { 'Yellow' } else { 'Green' })
 exit $(if ($script:FailCount -gt 0) { 1 } else { 0 })
