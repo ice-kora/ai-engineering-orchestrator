@@ -12,7 +12,7 @@
 | P1 双 Agent 协作闭环 | **PASS / CLOSED**（2026-09-10；E2E 统一 ID 闭环 + Saga 补偿实证，docs/P1-REPORT.md） |
 | P2-00 Runtime Contract Hardening | **PASS / CLOSED**（2026-09-10；task-scoped release + errata 事实覆盖层） |
 | P2-01 Orchestrator Kernel | **PASS / CLOSED**（2026-09-10 GPT Final Gate；含 State-Integrity Hotfix 三项；Final Regression 69/7/1，唯一失败为 KNOWN_FLAKE_WAIVER=ACCEPTED，FLAKE-001 登记） |
-| P2-02 LLM Planner | **WAITING / APPROVED**（GPTPlanner 真实接入：自然语言需求 → ExecutionPlan；等待详细指令与 API 配置决策） |
+| P2-02 LLM Planner | **IN PROGRESS**（GPTPlanner 真实实现完成：Responses API/gpt-5.6-sol/strict schema/host-authoritative/policy 四层门/重试≤2；T1-T10 全绿，回归 85/7/0；**Real API Smoke = BLOCKED_API_KEY_MISSING** 待 .env 填 OPENAI_API_KEY 后补跑） |
 
 运行时事实覆盖层：`docs/runtime-errata-v1.1.md`（spec-vs-reality 实证清单，后续实现以此为准）。
 

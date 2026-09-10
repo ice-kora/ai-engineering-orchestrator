@@ -40,7 +40,11 @@ def _repo_path(target: str) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser(prog="orchestrate")
     sub = parser.add_subparsers(dest="cmd", required=True)
-    p_plan = sub.add_parser("plan"); p_plan.add_argument("request"); p_plan.add_argument("--planner", required=True)
+    p_plan = sub.add_parser("plan"); p_plan.add_argument("request")
+    p_plan.add_argument("--planner", default="json", choices=["json", "gpt"])
+    p_plan.add_argument("--plan-doc", default=None,
+                        help="json mode: path to the deterministic plan document (required for --planner json)")
+    p_plan.add_argument("--plan-id", default=None, help="gpt: preallocated stable plan id (retries reuse it)")
     p_show = sub.add_parser("show"); p_show.add_argument("plan_id")
     p_app = sub.add_parser("approve"); p_app.add_argument("plan_id"); p_app.add_argument("--by", default="human")
     p_rej = sub.add_parser("reject"); p_rej.add_argument("plan_id"); p_rej.add_argument("--by", default="human")
@@ -53,7 +57,31 @@ def main() -> int:
 
     if args.cmd == "plan":
         request = contracts.UserRequest.from_dict(contracts.load_json(args.request))
-        plan_doc = contracts.load_json(args.planner)
+        if args.planner == "gpt":
+            # P2-02: model produces ONLY the semantic draft; host fields are local.
+            from orchestrator.gpt_planner import GPTPlanner, GPTPlannerError
+            from pathlib import Path as _P
+            gp = GPTPlanner(_P(request.target_repo).resolve(), plan_id=args.plan_id,
+                            evidence_dir=_P(STORE_ROOT).parent / "planner-evidence")
+            try:
+                plan, _ev = gp.plan(request)
+            except GPTPlannerError as exc:
+                print(f"PLAN_NOT_SAVED: {exc}")
+                print("STATUS: (nothing saved — approval unavailable, materialization forbidden)")
+                return 2
+            store.save_plan(plan, status="PLANNED")  # LAST step (failure atomicity)
+            print("PLAN_CREATED")
+            print(json.dumps({"planner": "gpt", "plan_id": plan.plan_id, "status": "PLANNED",
+                              "tasks": [t.task_key for t in plan.tasks],
+                              "requires_human_approval": plan.requires_human_approval},
+                             ensure_ascii=False, indent=1))
+            print("STATUS = PLANNED | HUMAN_APPROVAL_REQUIRED = YES")
+            print(f"NEXT: orchestrate show {plan.plan_id} ; orchestrate approve {plan.plan_id}")
+            return 0
+        if not args.plan_doc:
+            print("--planner json requires --plan-doc <path>")
+            return 2
+        plan_doc = contracts.load_json(args.plan_doc)
         if "{{" in json.dumps(plan_doc):  # template auto-ids
             slug = request.request_id.removeprefix("req-")[:20]
             plan_doc["plan_id"] = f"plan-{slug}"
@@ -61,11 +89,12 @@ def main() -> int:
         plan = planner.plan(request)
         plan.validate_dag()
         store.save_plan(plan, status="PLANNED")
-        print(json.dumps({"plan_id": plan.plan_id, "status": "PLANNED",
+        print("PLAN_CREATED")
+        print(json.dumps({"planner": "json", "plan_id": plan.plan_id, "status": "PLANNED",
                           "tasks": [t.task_key for t in plan.tasks],
                           "requires_human_approval": plan.requires_human_approval},
                          ensure_ascii=False, indent=1))
-        print("NEXT: orchestrate show / approve (explicit human action)")
+        print("STATUS = PLANNED | HUMAN_APPROVAL_REQUIRED = YES")
         return 0
 
     if args.cmd == "show":

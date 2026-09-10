@@ -31,3 +31,4 @@ local/
 sandbox/bd-server-probe/
 sandbox/agy-scratch/
 sandbox/orchestrator-state/
+sandbox/planner-evidence/

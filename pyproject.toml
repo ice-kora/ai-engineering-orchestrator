@@ -3,11 +3,18 @@ name = "ai-engineering-orchestrator"
 version = "0.1.0"
 description = "Multi-agent engineering orchestration control plane (GPT + ZCode + Antigravity + Beads + MCP Agent Mail)"
 requires-python = ">=3.12"
+dependencies = [
+    "openai>=3.11.0",
+]
 
 [tool.uv]
 # Rationale: 用户全局镜像 (tuna) 对部分 wheel 间歇性返回 403（2026-09-09 实测 jsonschema/pytest 均中招），
 # 本项目固定走官方 PyPI 以保证可重现安装；不影响全局 uv 配置。
 index-url = "https://pypi.org/simple"
+
+[[tool.uv.index]]
+url = "https://pypi.org/simple"
+default = true
 
 [dependency-groups]
 dev = [
