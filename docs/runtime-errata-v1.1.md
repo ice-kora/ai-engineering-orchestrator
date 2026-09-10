@@ -18,3 +18,5 @@
 
 - bd：`close --reason "…"`（消息是旗标）；`-C` 拒绝无 `.beads` 目录（init 需进程 cwd）；label 多位置参数形式会把冒号+大写 token 误判为 issue ID（用 `update --add-label` 或单 label `label add`）；`--actor` 审计、`--dolt-auto-commit off|on|batch` 多写策略。
 - am：clap 严格参数序（选项在位置参数前）；`reserve` 无 `--json` 旗标（默认 JSON）；`release --ids/--paths` 支持任务级精确释放（P2-00 实证：按 id 释放恰一条、他任务存活）；`list` 表含 ID/PATTERN/AGENT/EXPIRES/REASON（task→id 映射源）。
+
+| E-09 | P2-02 Planner 后端 | GPT 指令固定 OpenAI Responses API + OPENAI_API_KEY（gpt-5.6-sol） | 用户现实：ChatGPT 订阅（本地客户端），无 API key 且不使用 API 计费；官方对应通道 = Codex CLI（`codex exec`，订阅内 OAuth 已登录） | 新增 `CodexCLIPlanner`（orchestrator/codex_planner.py）作为订阅兼容后端：read-only/ephemeral/ignore-rules、`--output-schema` 同一 plan-draft wire schema、`-o` 取最终消息；**共享安全门零变更**（host-authoritative/本地四层验证/审批隔离/fail-closed 全在 planner_base）；Responses API 后端保留但标 NOT_AVAILABLE。真实 smoke 已验证（P2-02 报告） |

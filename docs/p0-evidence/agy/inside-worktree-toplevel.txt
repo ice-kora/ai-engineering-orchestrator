@@ -1,7 +1,7 @@
 $ -p git rev-parse cwd=D:\workspace\ai-engineering-orchestrator\sandbox\demo-repo\worktrees\agent-zcode
 exit=0
 --- stdout ---
-{"conversation_id":"a25e3cf5-0e79-4f28-94e7-2ff42155a523","status":"SUCCESS","response":"D:/workspace/ai-engineering-orchestrator/sandbox/demo-repo/worktrees/agent-zcode\n","duration_seconds":27.5021792,"num_turns":1,"usage":{"input_tokens":41665,"output_tokens":2247,"thinking_tokens":1785,"cache_read_tokens":93551,"total_tokens":43912}}
+{"conversation_id":"d1cebe6f-671f-4a17-958b-acb39b8e4650","status":"SUCCESS","response":"D:/workspace/ai-engineering-orchestrator\n","duration_seconds":46.2295098,"num_turns":1,"usage":{"input_tokens":72160,"output_tokens":2456,"thinking_tokens":1529,"cache_read_tokens":130089,"total_tokens":74616}}
 
 --- stderr ---
 N/A

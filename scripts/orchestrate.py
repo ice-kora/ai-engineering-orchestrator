@@ -41,7 +41,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="orchestrate")
     sub = parser.add_subparsers(dest="cmd", required=True)
     p_plan = sub.add_parser("plan"); p_plan.add_argument("request")
-    p_plan.add_argument("--planner", default="json", choices=["json", "gpt"])
+    p_plan.add_argument("--planner", default="json", choices=["json", "gpt", "codex"])
     p_plan.add_argument("--plan-doc", default=None,
                         help="json mode: path to the deterministic plan document (required for --planner json)")
     p_plan.add_argument("--plan-id", default=None, help="gpt: preallocated stable plan id (retries reuse it)")
@@ -57,6 +57,27 @@ def main() -> int:
 
     if args.cmd == "plan":
         request = contracts.UserRequest.from_dict(contracts.load_json(args.request))
+        if args.planner == "codex":
+            from orchestrator.codex_planner import CodexCLIPlanner
+            from orchestrator.gpt_planner import GPTPlannerError
+            from pathlib import Path as _P
+            cp = CodexCLIPlanner(_P(request.target_repo).resolve(), plan_id=args.plan_id,
+                                 evidence_dir=_P(STORE_ROOT).parent / "planner-evidence")
+            try:
+                plan, _ev = cp.plan(request)
+            except GPTPlannerError as exc:
+                print(f"PLAN_NOT_SAVED: {exc}")
+                print("STATUS: (nothing saved — approval unavailable, materialization forbidden)")
+                return 2
+            store.save_plan(plan, status="PLANNED")  # LAST step (failure atomicity)
+            print("PLAN_CREATED")
+            print(json.dumps({"planner": "codex", "plan_id": plan.plan_id, "status": "PLANNED",
+                              "tasks": [t.task_key for t in plan.tasks],
+                              "requires_human_approval": plan.requires_human_approval},
+                             ensure_ascii=False, indent=1))
+            print("STATUS = PLANNED | HUMAN_APPROVAL_REQUIRED = YES")
+            print(f"NEXT: orchestrate show {plan.plan_id} ; orchestrate approve {plan.plan_id}")
+            return 0
         if args.planner == "gpt":
             # P2-02: model produces ONLY the semantic draft; host fields are local.
             from orchestrator.gpt_planner import GPTPlanner, GPTPlannerError

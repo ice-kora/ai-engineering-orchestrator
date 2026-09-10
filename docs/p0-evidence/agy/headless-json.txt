@@ -1,7 +1,7 @@
 $ -p ... --output-format json
 exit=0
 --- stdout ---
-{"conversation_id":"dc2ce6e3-0d6d-4b2c-8953-47938592a4c9","status":"SUCCESS","response":"OK\n","duration_seconds":2.5257177,"num_turns":1,"usage":{"input_tokens":16201,"output_tokens":82,"thinking_tokens":81,"cache_read_tokens":0,"total_tokens":16283}}
+{"conversation_id":"b5dfe3cc-902e-409c-8bde-ffbba134e719","status":"SUCCESS","response":"OK\n","duration_seconds":1.9209184000000001,"num_turns":1,"usage":{"input_tokens":16193,"output_tokens":81,"thinking_tokens":80,"cache_read_tokens":0,"total_tokens":16274}}
 
 --- stderr ---
 N/A

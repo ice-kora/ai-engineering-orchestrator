@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 from adapters.beads import BeadsAdapter  # noqa: E402
 from orchestrator import contracts  # noqa: E402
 from orchestrator.gpt_planner import ApiKeyMissing, GPTPlanner, GPTPlannerError  # noqa: E402
+from orchestrator.codex_planner import CodexCLIPlanner  # noqa: E402
 from orchestrator.store import Store  # noqa: E402
 
 REPO = (ROOT / "sandbox" / "demo-repo").resolve()
@@ -44,7 +45,9 @@ def main() -> int:
                     "保留正常取消流程，并补充边界测试。",
         constraints=["sandbox only", "stdlib unittest"],
     )
-    planner = GPTPlanner(REPO, plan_id="plan-smoke-cancel-reason", evidence_dir=EVIDENCE)
+    backend = sys.argv[1] if len(sys.argv) > 1 else "codex"
+    planner_cls = {"codex": CodexCLIPlanner, "gpt": GPTPlanner}[backend]
+    planner = planner_cls(REPO, plan_id="plan-smoke-cancel-reason", evidence_dir=EVIDENCE)
 
     before = beads_count()
     try:
@@ -72,7 +75,7 @@ def main() -> int:
         "approval_record": approval,               # expect None
         "tasks": [{"task_key": t.task_key, "deps": t.dependencies,
                    "paths": t.target_paths} for t in plan.tasks],
-        "model_meta": {k: ev.summary()[k] for k in ("model", "reasoning_effort", "prompt_version")},
+        "backend": backend, "model_meta": {k: ev.summary()[k] for k in ("backend", "model", "reasoning_effort", "prompt_version")},
         "attempts": ev.summary()["attempts"],
         "next": f"orchestrate show {plan.plan_id}",
     }

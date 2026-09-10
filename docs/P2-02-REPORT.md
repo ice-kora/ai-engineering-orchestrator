@@ -54,3 +54,30 @@ JsonPlanner 回归：CLI json 模式 + 既有 P2 套件（contracts/orchestrator
 
 ### 全量回归（2026-09-10 · 含 P2-02 全部新套件）
 `pytest tests` 单次完整运行：**85 passed / 7 skipped / 0 failed**（7 skip = ZCode Headless 遗留项；本轮无 FLAKE-001 复发）。
+
+---
+
+# P2-02 附录 — Codex CLI 后端（订阅兼容路线 · 2026-09-10）
+
+## 背景（errata E-09）
+GPT 指令的 Provider 前提（OpenAI API + key）与用户现实（ChatGPT 订阅、无 key、不用 API 计费）不符。经用户明确指示，采用官方订阅通道：**Codex CLI**（`@openai/codex` 0.154.0，npm 项目外全局装于 D 盘 nvm；`codex login status` = Logged in using ChatGPT，订阅内授权，零 key 零按量计费）。
+
+## 实现
+- `orchestrator/planner_base.py`（新）：**后端无关的共享编排**——host-authoritative 组装、Draft 2020-12 契约、DAG、runtime policy 四层门、重试≤2（repair prompt 携带 violations、零代码偷修）、fail-closed、脱敏 evidence。GPTPlanner 与 CodexCLIPlanner 仅在 `_invoke`（UserRequest→Draft 传输层）不同，**下游完全同一条 P2-01 pipeline**（§13 合规）。
+- `orchestrator/codex_planner.py`：`codex exec -s read-only --ephemeral --skip-git-repo-check --ignore-rules -c model_reasoning_effort="high" --output-schema <plan-draft> -o <last> -`（stdin 全量 prompt；`-o` 文件取结构化最终消息；不传 `-C`——grounding 只来自固定 RepoContext，保持与 API 后端同等确定性）。规划探针实测：`--output-schema` 严格约束最终消息形状。
+- CLI：`orchestrate plan --planner codex|gpt|json`；smoke：`scripts/p2_smoke_gpt.py [codex|gpt]`（默认 codex）。
+
+## Real API Smoke（Codex/ChatGPT 订阅 · SUCCESS）
+需求"为订单模块增加取消订单原因校验…"：**第一次尝试即 valid**（31.8s，effort=high）→ 单任务 `implement-cancel-reason-validation`（paths=src/order.py + tests/test_order.py，新文件落在既有 src/tests 模块边界，policy grounding 通过；单任务 deps=[] 合理）→ PLANNED；**Beads delta=0、approval=None**（审批隔离实测）。evidence 脱敏存 sandbox/planner-evidence（plan-smoke-cancel-reason.json）。
+（Responses API 后端：保留、功能完整、单元绿；标记 NOT_AVAILABLE 直至有 key。）
+
+## 测试
+新增 `tests/unit/test_codex_planner.py`（命令形状/read-only+ephemeral 断言、rc≠0 fail-closed、最终消息非 JSON fail-closed）：3/3；T 矩阵（后端无关共享层）15/15 保持；合计 18/18。
+
+## P2-02 终态修订
+- `P2_02_STATUS = PASS`（原 PARTIAL 的唯一缺口 Real Smoke 已由 Codex 后端补齐）
+- `OPENAI_RESPONSES_API = VERIFIED_VIA_CODEX`（订阅通道实测；Responses API 直连保留 NOT_AVAILABLE）
+- `GPT_STRUCTURED_PLAN = VERIFIED`（真实模型输出通过全部本地门）
+- `PLAN_SAFETY_GATE = VERIFIED`
+- `REAL_API_SMOKE = SUCCESS`
+- `CAN_ENTER_P2_03 = NO`（按流程等 GPT P2-03 Gate；另：smoke 产出的 PLANNED plan 待人工 `orchestrate show / approve` 演练）
