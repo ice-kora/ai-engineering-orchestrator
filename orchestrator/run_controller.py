@@ -118,14 +118,59 @@ class RunController:
             if repaired is not None:
                 notes.append(f"C2: repaired latest review view for {task_key} "
                              f"(iteration {repaired.get('iteration')}) from immutable history")
-        # C3: final-gate decision persisted but plan status not yet migrated
+        # C3: final-gate decision persisted but plan status not yet migrated.
+        # Replay MUST re-validate the persisted decision (schema + verdict +
+        # grounding) — recovery never weakens the normal-path gates.
         status = self.store.plan_status(plan_id)
         decision = self.store.final_gate(plan_id)
         if decision and "verdict" in decision and status == "FINAL_GATE_RUNNING":
-            notes.append(f"C3: replaying host transition for persisted decision "
-                         f"({decision['verdict']}) without re-calling Codex")
-            self._apply_final_decision_transition(plan_id, decision)
+            errors = self._validate_persisted_decision(plan_id, decision)
+            if errors:
+                # INVALID persisted decision: fail closed. Preserve the bad
+                # evidence for forensic inspection; never re-call Codex; never
+                # transition to DONE or FINAL_FIX_REQUIRED.
+                self.store.set_plan_status(plan_id, "ESCALATED")
+                notes.append("INVALID_PERSISTED_FINAL_GATE_DECISION: " + "; ".join(errors))
+            else:
+                notes.append(f"C3: replaying host transition for persisted decision "
+                             f"({decision['verdict']}) without re-calling Codex")
+                self._apply_final_decision_transition(plan_id, decision)
         return notes
+
+    def _validate_persisted_decision(self, plan_id: str, decision: dict) -> list[str]:
+        """Full re-validation of a persisted final-gate decision (P2-04 hotfix).
+
+        Checks (same rigor as the normal path):
+        1. decisions.validate_decision(decision, "final_gate") — full contract
+        2. verdict in the three-value enum
+        3. findings[].task_key grounding: empty or belongs to this plan
+        Returns [] when valid; non-empty errors => fail closed.
+        """
+        from orchestrator import decisions as _dec
+        errors: list[str] = []
+
+        # 1. full contract validation (schema + structure completeness)
+        try:
+            _dec.validate_decision(decision, "final_gate")
+        except _dec.DecisionContractError as exc:
+            errors.append(f"schema: {exc}")
+            return errors  # no point grounding an ill-formed payload
+
+        # 2. verdict enum (belt-and-suspenders: schema already enforces this,
+        #    but a tampered/corrupted file might bypass — verify independently)
+        verdict = decision.get("verdict")
+        if verdict not in ("APPROVED", "FOLLOWUP_REQUIRED", "ESCALATE_HUMAN"):
+            errors.append(f"verdict '{verdict}' not in enum")
+
+        # 3. grounding: findings[].task_key must be "" or a real plan task_key
+        known_keys = {t.task_key for t in self.store.plan(plan_id).tasks}
+        referenced = {f.get("task_key", "") for f in decision.get("findings", [])
+                      if f.get("task_key")}
+        unknown = referenced - known_keys
+        if unknown:
+            errors.append(f"grounding: unknown task_key(s) {sorted(unknown)}")
+
+        return errors
 
     def _apply_final_decision_transition(self, plan_id: str, decision: dict) -> None:
         """Host-side transition replay for a persisted final-gate decision."""

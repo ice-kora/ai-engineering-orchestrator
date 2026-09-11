@@ -63,3 +63,28 @@ CONTINUE (new process) → DONE (idempotent; zero side effects)
 ## 非目标遵守
 
 未实现：ZCode headless 逆向、自动实现、默认自动 merge、自动风险豁免、自动审批、daemon/Windows service/后台调度器、Web UI/Board UI、RAG、Model Router、OpenAI API、大规模并发、生产仓库接入、部署。
+
+---
+
+# P2-04 Final Hotfix 附录 — C3 Decision Replay Integrity（2026-09-11）
+
+## P2_04_FINAL_HOTFIX = **PASS**
+
+## 修复
+`RunController._recover` 的 C3 路径在 `_apply_final_decision_transition` 之前新增
+`_validate_persisted_decision(plan_id, decision)` 全量重验：
+1. `decisions.validate_decision(decision, "final_gate")` 完整 schema 契约
+2. verdict 独立枚举校验（防篡改绕过 schema）
+3. `findings[].task_key` grounding：空或属于当前 Plan（同正常路径规则）
+非法 ⇒ **fail-closed**：plan → ESCALATED + `INVALID_PERSISTED_FINAL_GATE_DECISION` 入 recovery_notes；坏 evidence **保留不删**（人工取证）；Codex 零调用。
+
+## T19-T22（`tests/integration/test_p2_04_hotfix.py`，4/4）
+T19 valid APPROVED → replay → invariant → **DONE**，Codex calls=0 ✓
+T20 `{"verdict":"APPROVED"}` only → schema invalid → **ESCALATED**，evidence 保留，Codex=0 ✓
+T21 合 schema 但引用未知 task_key → grounding invalid → **ESCALATED** ✓
+T22 valid FOLLOWUP_REQUIRED → **FINAL_FIX_REQUIRED**，Codex=0 ✓
+（原 T12 保留不变，全过）
+
+## PERSISTED_DECISION_SCHEMA_REPLAY = **VERIFIED** | PERSISTED_DECISION_GROUNDING = **VERIFIED** | INVALID_REPLAY_FAIL_CLOSED = **VERIFIED** | CODEX_RECALL_ON_REPLAY = **0**
+## TARGETED_REGRESSION = **45 passed / 0 failed**
+## P2_04_READY_FOR_FINAL_GATE = **YES**
